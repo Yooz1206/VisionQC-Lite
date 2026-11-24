@@ -78,6 +78,8 @@ python export_onnx.py --weights runs/visionqc/washer_yolo11n/weights/best.pt
 - 四路实时视图：原图+ROI、极坐标展开、残差/分割掩膜、检测结果
 - 模块执行日志、批量结果表、CSV / JSON / PNG 导出、流程配置保存与加载
 - YOLO ONNX 主检测器接入，与规则基线同屏叠加对照
+- **实拍图一键缺口检测**：自动定位银色圆标记（十字+C 坐标）、自动框出工件与缺口、OK/NG 判定；内置 3 张实拍样例
+- 内置「使用指南」弹窗，完整步骤见 `docs/USER_GUIDE.md`
 
 ## 7. 目录结构
 
@@ -94,12 +96,14 @@ visionqc/
 │   ├── index.html             # 快速演示（单文件，答辩用）
 │   ├── index.template.html
 │   ├── studio.template.html   # 工作台模板
-├── studio/index.html          # 工作台成品（单文件，含 YOLO 推理）
+├── studio/index.html          # 工作台成品（单文件，含 YOLO 推理 + 实拍检测）
+├── samples/real/              # 用户提供的 3 张实拍样例
 ├── dataset/yolo/              # YOLO 数据集（生成）
 ├── train_yolo.py / export_onnx.py / requirements-yolo.txt
 ├── reports/                   # 评测报告与结果图
 ├── docs/
 │   ├── WORKFLOW.md
+│   ├── USER_GUIDE.md
 │   ├── YOLO_TRAINING.md
 │   └── SELF_MEDIA_ARTICLE.md
 └── VERSION / CHANGELOG.md / LICENSE / README.md
@@ -122,6 +126,9 @@ node src/make_yolo_dataset.js 800
 
 # 5) 重新生成答辩用图与页面
 node src/make_figures.js
+
+# 6) 修改工作台模板 / 圆缺口算法后重建单文件页面
+node src/build_studio.js
 node src/build_demo.js
 node src/build_studio.js
 ```
@@ -147,4 +154,4 @@ node src/build_studio.js
 
 ## 11. 版本
 
-当前版本：`1.2.0`。详见 `CHANGELOG.md`。
+当前版本：`1.3.0`。详见 `CHANGELOG.md`。
