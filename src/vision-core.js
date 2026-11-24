@@ -315,5 +315,109 @@
     return res;
   }
 
-  return { W, H, R0, R1, PW, PH, mulberry32, generateImage, polarUnwrap, boxBlur, boxBlurCircular, connectedComponents, detectOurs, detectOursNoFilter, detectBaselineOtsu, detectBaselineAdaptive, match, makeDataset, evaluate };
+  /* ----------------------------------------------------------------------
+   * Generic / parameterized API for the visual-inspection studio.
+   * These functions work on images of any size and do not alter the
+   * legacy 128x128 pipeline above, so the published evaluation is stable.
+   * -------------------------------------------------------------------- */
+
+  function toGray(rgba, w, h) {
+    const g = new Uint8Array(w * h);
+    for (let i = 0, p = 0; i < g.length; i++, p += 4) {
+      g[i] = clamp(Math.round(0.299 * rgba[p] + 0.587 * rgba[p + 1] + 0.114 * rgba[p + 2]), 0, 255);
+    }
+    return g;
+  }
+
+  function autoStretch(src) {
+    let lo = 255, hi = 0;
+    for (let i = 0; i < src.length; i++) { const v = src[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (hi - lo < 8) return Uint8Array.from(src);
+    const out = new Uint8Array(src.length), k = 255 / (hi - lo);
+    for (let i = 0; i < src.length; i++) out[i] = clamp(Math.round((src[i] - lo) * k), 0, 255);
+    return out;
+  }
+
+  function estimateROI(img) {
+    const { w, h, gray: g } = img;
+    // border median approximates the background / conveyor colour
+    const border = [];
+    const step = Math.max(1, Math.floor(Math.min(w, h) / 60));
+    for (let x = 0; x < w; x += step) { border.push(g[x], g[(h - 1) * w + x]); }
+    for (let y = 0; y < h; y += step) { border.push(g[y * w], g[y * w + w - 1]); }
+    border.sort((a, b) => a - b);
+    const bg = border[border.length >> 1] || 128;
+    let minX = w, minY = h, maxX = -1, maxY = -1, n = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (Math.abs(g[y * w + x] - bg) > 16) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        n++;
+      }
+    }
+    if (n < 20 || maxX < 0) {
+      const r = Math.min(w, h) * 0.36;
+      return { cx: w / 2, cy: h / 2, r0: r * 0.45, r1: r * 0.95, x0: w / 2 - r, y0: h / 2 - r, x1: w / 2 + r, y1: h / 2 + r, bg, auto: false };
+    }
+    const cx = (minX + maxX + 1) / 2, cy = (minY + maxY + 1) / 2;
+    const rOuter = Math.max(4, Math.min((maxX - minX + 1), (maxY - minY + 1)) * 0.48);
+    return {
+      cx, cy,
+      r0: Math.max(2, rOuter * 0.42), r1: rOuter * 0.98,
+      x0: minX, y0: minY, x1: maxX, y1: maxY,
+      bg, auto: true
+    };
+  }
+
+  function polarUnwrapEx(img, cfg) {
+    const pw = cfg.pw || 360, ph = cfg.ph || 30;
+    const { cx, cy, r0, r1 } = cfg;
+    const out = new Float32Array(pw * ph);
+    const { w, h, gray: g } = img;
+    for (let c = 0; c < pw; c++) {
+      const a = (c / pw) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = 0; r < ph; r++) {
+        const rr = r0 + r * ((r1 - r0) / ph);
+        const x = Math.round(cx + rr * ca), y = Math.round(cy + rr * sa);
+        out[r * pw + c] = (x >= 0 && y >= 0 && x < w && y < h) ? g[y * w + x] : 128;
+      }
+    }
+    return out;
+  }
+
+  function polarBoxToCartesianEx(minC, minR, maxC, maxR, cfg) {
+    const pw = cfg.pw || 360, ph = cfg.ph || 30;
+    let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1;
+    const stepCol = Math.max(1, Math.floor((maxC - minC) / 6) || 1);
+    for (let c = minC; c <= maxC; c += stepCol) {
+      for (let r = minR; r <= maxR; r++) {
+        const a = (c / pw) * Math.PI * 2, rr = cfg.r0 + r * ((cfg.r1 - cfg.r0) / ph);
+        const x = cfg.cx + rr * Math.cos(a), y = cfg.cy + rr * Math.sin(a);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+    return [Math.floor(minX - 1), Math.floor(minY - 1), Math.ceil(maxX + 1), Math.ceil(maxY + 1)];
+  }
+
+  // Standard-order convenience detector using the generic primitives.
+  function detectEx(img, cfg) {
+    const roi = cfg.roi || estimateROI(img);
+    const polar = polarUnwrapEx(img, { ...roi, pw: cfg.pw || 360, ph: cfg.ph || 30 });
+    const smooth = boxBlurCircular(polar, cfg.pw || 360, cfg.ph || 30, cfg.smoothKw || 3, cfg.smoothKh || 3);
+    const bg = boxBlurCircular(smooth, cfg.pw || 360, cfg.ph || 30, cfg.bgKw || 61, cfg.bgKh || 15);
+    const residual = Float32Array.from(smooth, (v, i) => bg[i] - v);
+    const mask = new Uint8Array(polar.length);
+    for (let i = 0; i < mask.length; i++) mask[i] = residual[i] > (cfg.threshold || 12) ? 1 : 0;
+    const comps = connectedComponents(mask, cfg.pw || 360, cfg.ph || 30);
+    const boxes = [];
+    for (const c of comps) {
+      const span = c.maxX - c.minX + 1, rspan = c.maxY - c.minY + 1;
+      if (c.area < (cfg.minArea || 5) || span < (cfg.minSpan || 4) || rspan > 14) continue;
+      boxes.push({ bbox: polarBoxToCartesianEx(c.minX, c.minY, c.maxX, c.maxY, roi), area: c.area });
+    }
+    return { boxes, roi, polar, residual, mask };
+  }
+
+  return { W, H, R0, R1, PW, PH, mulberry32, generateImage, polarUnwrap, boxBlur, boxBlurCircular, connectedComponents, detectOurs, detectOursNoFilter, detectBaselineOtsu, detectBaselineAdaptive, match, makeDataset, evaluate, toGray, autoStretch, estimateROI, polarUnwrapEx, polarBoxToCartesianEx, detectEx };
 });
