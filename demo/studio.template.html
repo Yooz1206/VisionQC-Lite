@@ -580,7 +580,9 @@
     putGray($('cDet'),res.img.gray,res.img.w,res.img.h);
     const ctx=$('cDet').getContext('2d');
     ctx.font='10px sans-serif';
-    if(yres){
+    if(src.chip){
+      // 实拍缺口模式：只显示圆定位与缺口框，避免其它基线框干扰判读
+    }else if(yres){
       // rule engine as transparent dashed baseline
       ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.strokeStyle='rgba(57,224,138,.65)';
       for(const d of res.boxes){const b=d.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}
@@ -599,7 +601,7 @@
         ctx.fillText('#'+(i+1),b[0]+1,Math.max(9,b[1]-2));
       });
     }
-    if(src.truth){ctx.strokeStyle='#ff6272';ctx.lineWidth=1;for(const t of src.truth){const b=t.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}}
+    if(src.truth&&!src.chip){ctx.strokeStyle='#ff6272';ctx.lineWidth=1;for(const t of src.truth){const b=t.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}}
     if(src.chip)drawChipOverlay(ctx,src.chip);
   }
 
@@ -890,6 +892,9 @@
     $('chipArea').textContent=r.verdict==='NG'?r.maxDefectArea+' px':'—';
     $('chipHint').textContent=r.reasons[0]+' · 耗时 '+r.ms+' ms';
     await runAndRender();
+    $('detLabel').textContent=r.verdict==='NG'?'1 缺口':'无缺口';
+    $('stCount').textContent=r.verdict==='NG'?'1':'0';
+    $('stPeak').textContent='—';$('stKeep').textContent='—';
     $('statusText').textContent=(state.current.name||'样本')+' · 圆心 ('+r.fiducial.x+','+r.fiducial.y+') · '+r.verdict+' · '+r.ms+' ms';
     toast(r.verdict==='NG'?'检出缺口 '+r.maxDefectArea+' px':'未检出显著缺口');
   }
