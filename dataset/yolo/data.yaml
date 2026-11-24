@@ -1,0 +1,8 @@
+path: ./dataset/yolo
+train: images/train
+val: images/val
+nc: 3
+names: ['scratch', 'notch', 'stain']
+
+# 可控合成垫片缺陷数据集：3 类缺陷 × 3 种光照 × 随机角度
+# YOLO 仅作检测骨干；创新点在数据构造与极坐标先验流程
