@@ -1,0 +1,4 @@
+# Training / ONNX export only. The browser studio and rule-based engine need no Python packages.
+ultralytics>=8.3.0
+onnx>=1.16.0
+onnxsim>=0.4.36
