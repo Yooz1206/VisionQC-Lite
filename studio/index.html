@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionQC-Studio · 可编排视觉检测工作台</title>
+<style>
+  :root{--bg:#0b1725;--panel:#132438;--panel2:#1a3049;--line:#2b4a6b;--text:#e8f1fb;--muted:#90aac6;--cyan:#2ad4c9;--blue:#4c9dff;--green:#39e08a;--red:#ff6272;--amber:#ffb648}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:13px}
+  button,select,input{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 9px;outline:none}
+  button{cursor:pointer}button:hover{filter:brightness(1.15)}button:disabled{opacity:.35;cursor:default}
+  button.primary{background:var(--cyan);border-color:var(--cyan);color:#052b2a;font-weight:700}
+  button.ghost{background:transparent}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#10243b,#0b1725)}
+  header h1{margin:0;font-size:18px;letter-spacing:.4px}header h1 span{color:var(--cyan)}
+  .badge{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:4px 10px;white-space:nowrap}
+  .head-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .app{display:grid;grid-template-columns:250px minmax(420px,1fr) 320px;gap:12px;padding:12px;min-height:640px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+  .panel>h3{margin:0;padding:10px 12px;background:var(--panel2);font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.5px;border-bottom:1px solid var(--line)}
+  .pbody{padding:12px;overflow:auto;flex:1}
+  .section{margin-bottom:18px}
+  .section:last-child{margin-bottom:0}
+  .section-title{font-size:12px;color:var(--cyan);font-weight:700;margin:0 0 8px;letter-spacing:.5px}
+  .drop{border:1px dashed var(--line);border-radius:8px;padding:16px 10px;text-align:center;color:var(--muted);cursor:pointer;transition:.2s}
+  .drop:hover{border-color:var(--cyan);color:var(--cyan)}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .tabs button{flex:1;padding:5px;font-size:11px}
+  .tabs button.active{background:var(--cyan);color:#052b2a;border-color:var(--cyan);font-weight:700}
+  .thumbs{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:190px;overflow:auto}
+  .thumb{display:flex;align-items:center;gap:8px;padding:5px;border:1px solid transparent;border-radius:7px;cursor:pointer}
+  .thumb:hover{background:var(--panel2)}
+  .thumb.sel{border-color:var(--cyan);background:rgba(42,212,201,.1)}
+  .thumb canvas{width:42px;height:42px;border-radius:4px;background:#000;flex:none}
+  .thumb .info{min-width:0;flex:1}
+  .thumb .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+  .thumb .meta{font-size:10px;color:var(--muted);margin-top:2px}
+  .row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .row label{flex:1;font-size:11px;color:var(--muted)}
+  .row input[type=number]{width:72px;padding:4px 6px;font-size:11px}
+  .row select{width:100%;padding:5px}
+  .btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .btnrow button{flex:1;font-size:11px;padding:5px}
+  .hint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:6px}
+  .centerbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
+  .centerbar .status{font-size:11px;color:var(--muted);margin-left:auto}
+  .views{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+  .view{background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .view h4{margin:0;padding:7px 10px;font-size:11px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;border-bottom:1px solid var(--line)}
+  .view h4 b{color:var(--cyan);font-size:10px}
+  .view canvas{display:block;width:100%;height:180px;object-fit:contain;background:#050c14;image-rendering:pixelated}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 12px 12px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  .stat .k{font-size:10px;color:var(--muted)}.stat .v{font-size:19px;font-weight:700;color:var(--cyan);margin-top:2px}
+  .logwrap{padding:0 12px 12px}
+  .logwrap h4{margin:0 0 6px;font-size:11px;color:var(--muted)}
+  .log{max-height:150px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+  .log table{width:100%;border-collapse:collapse;font-size:11px}
+  .log th,.log td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--line)}
+  .log th{color:var(--muted);position:sticky;top:0;background:var(--panel2)}
+  .log tr:last-child td{border-bottom:none}
+  .skip{color:var(--muted);opacity:.6}
+  .mod{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--panel2);overflow:hidden}
+  .mod.off{opacity:.55}
+  .mod-head{display:flex;align-items:flex-start;gap:7px;padding:8px}
+  .mod-head input{margin-top:3px}
+  .mod-head .txt{flex:1;min-width:0}
+  .mod-head b{font-size:12px;display:block}
+  .mod-head small{font-size:10px;color:var(--muted);display:block;margin-top:2px;line-height:1.3}
+  .mod-actions{display:flex;flex-direction:column;gap:2px}
+  .mod-actions button{padding:0 6px;font-size:11px;line-height:16px}
+  .mod-params{padding:0 8px 8px;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .mod-params label{font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+  .mod-params input{width:100%;padding:4px 5px;font-size:11px}
+  .bottom{margin:0 12px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .bottom-head{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .bottom-head h3{margin:0;font-size:12px;color:var(--muted)}
+  .bottom-head .spacer{flex:1}
+  table.results{width:100%;border-collapse:collapse;font-size:11px}
+  table.results th,table.results td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  table.results th{color:var(--muted);font-weight:600}
+  table.results tr:last-child td{border-bottom:none}
+  .tag{padding:2px 7px;border-radius:10px;font-size:10px}
+  .tag.ok{background:rgba(57,224,138,.15);color:var(--green)}
+  .tag.bad{background:rgba(255,98,114,.15);color:var(--red)}
+  .empty{padding:16px;color:var(--muted);text-align:center}
+  .toast{position:fixed;right:18px;bottom:18px;background:var(--panel2);border:1px solid var(--cyan);border-radius:8px;padding:10px 14px;font-size:12px;z-index:20;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  @media(max-width:1150px){.app{grid-template-columns:220px 1fr}.app>aside:last-child{grid-column:1/-1}.views{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Vision<span>QC</span>-Studio · 可编排视觉检测工作台</h1>
+    <div style="font-size:11px;color:var(--muted);margin-top:3px">上传样本 · 自由编排检测流程 · 批量检测 · 报告导出</div>
+  </div>
+  <div class="head-actions">
+    <button id="btnNew">新建项目</button>
+    <button id="btnOpenProject">打开流程</button>
+    <button id="btnSaveProject">保存流程</button>
+    <button class="primary" id="btnRun">▶ 运行流程</button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- LEFT -->
+  <aside class="panel">
+    <h3>图像源 / ROI</h3>
+    <div class="pbody">
+      <div class="section">
+        <div class="section-title">1. 载入样本</div>
+        <div class="tabs"><button id="tabSingle" class="active">单张</button><button id="tabBatch">批量</button></div>
+        <div class="drop" id="drop">点击选择或拖拽图片到此处<br><span style="font-size:10px">支持 JPG / PNG / BMP，自动缩放到最长边 512px</span></div>
+        <div class="thumbs" id="thumbs"></div>
+        <div class="btnrow">
+          <button id="btnSynthetic">载入合成示例</button>
+          <button id="btnClearImages">清空</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label>缺陷类型</label>
+          <select id="synKind" style="width:100px"><option value="scratch">划痕</option><option value="notch">缺口</option><option value="stain">污渍</option><option value="normal">正常</option></select>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">2. 检测区域 ROI</div>
+        <div class="row"><label>区域类型</label><select id="roiType" style="width:110px"><option value="ring">环形（垫片）</option><option value="rect">矩形</option></select></div>
+        <div id="ringRoi">
+          <div class="row"><label>圆心 X</label><input type="number" id="roiCx" value="64"></div>
+          <div class="row"><label>圆心 Y</label><input type="number" id="roiCy" value="64"></div>
+          <div class="row"><label>内半径</label><input type="number" id="roiR0" value="22"></div>
+          <div class="row"><label>外半径</label><input type="number" id="roiR1" value="52"></div>
+        </div>
+        <div id="rectRoi" style="display:none">
+          <div class="row"><label>左 X</label><input type="number" id="roiX0" value="12"></div>
+          <div class="row"><label>上 Y</label><input type="number" id="roiY0" value="12"></div>
+          <div class="row"><label>右 X</label><input type="number" id="roiX1" value="116"></div>
+          <div class="row"><label>下 Y</label><input type="number" id="roiY1" value="116"></div>
+        </div>
+        <div class="btnrow"><button id="btnAutoRoi">自动定位 ROI</button><button id="btnFitRoi">适配图像</button></div>
+        <div class="hint">点击左侧“原图 + ROI”画面可直接设置圆心。自动定位基于背景色差估测工件外接范围，复杂场景请手动微调。</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">3. 快速预设</div>
+        <div class="btnrow">
+          <button data-preset="standard">标准</button>
+          <button data-preset="sensitive">高灵敏</button>
+          <button data-preset="strict">严格</button>
+          <button data-preset="cartesian">笛卡尔</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">4. YOLO 主检测器</div>
+        <div class="btnrow"><button id="btnLoadYolo">载入 YOLO 模型 (.onnx)</button></div>
+        <div class="row" style="margin-top:6px"><label>启用 YOLO</label><input type="checkbox" id="yoloOn" checked style="width:auto"></div>
+        <div class="row"><label>置信度阈值</label><input type="number" id="yoloConf" value="0.25" step="0.05" min="0.05" max="0.95"></div>
+        <div class="row"><label>NMS IoU</label><input type="number" id="yoloNms" value="0.45" step="0.05" min="0.1" max="0.9"></div>
+        <div class="row"><label>推理尺寸</label><select id="yoloSize" style="width:90px"><option value="640">640</option><option value="416">416</option><option value="320">320</option></select></div>
+        <div class="hint" id="yoloStatus">未载入模型：当前使用规则引擎基线。载入 exported ONNX 后 YOLO 成为主检测器。</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER -->
+  <main class="panel">
+    <div class="centerbar">
+      <button class="primary" id="btnRun2">运行流程</button>
+      <button id="btnBatch">批量检测全部</button>
+      <button id="btnReset">重置参数</button>
+      <span class="status" id="statusText">等待载入样本…</span>
+    </div>
+    <div class="views">
+      <div class="view"><h4>① 原图 + ROI <b id="srcLabel">—</b></h4><canvas id="cSrc"></canvas></div>
+      <div class="view"><h4>② 极坐标展开 <b id="polarLabel">—</b></h4><canvas id="cPolar"></canvas></div>
+      <div class="view"><h4>③ 残差 / 分割掩膜 <b id="maskLabel">—</b></h4><canvas id="cResid"></canvas></div>
+      <div class="view"><h4>④ 检测结果 <b id="detLabel">—</b></h4><canvas id="cDet"></canvas></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">缺陷框</div><div class="v" id="stCount">—</div></div>
+      <div class="stat"><div class="k">最大残差峰值</div><div class="v" id="stPeak">—</div></div>
+      <div class="stat"><div class="k">候选 → 保留</div><div class="v" id="stKeep">—</div></div>
+      <div class="stat"><div class="k">单张耗时</div><div class="v" id="stTime">—</div></div>
+    </div>
+    <div class="logwrap">
+      <h4>模块执行日志（流程可解释性）</h4>
+      <div class="log"><table><thead><tr><th>顺序</th><th>模块</th><th>状态</th><th>输出</th><th>耗时</th></tr></thead><tbody id="logBody"><tr><td colspan="5" class="skip">尚未运行</td></tr></tbody></table></div>
+    </div>
+  </main>
+
+  <!-- RIGHT -->
+  <aside class="panel">
+    <h3>流程编排（可启停 / 排序 / 调参）</h3>
+    <div class="pbody">
+      <div class="hint" style="margin-bottom:10px">勾选启用模块；↑↓ 调整执行顺序；灰色模块为必需环节。修改后自动重跑。</div>
+      <div id="pipeline"></div>
+      <div class="hint">提示：关闭“极坐标展开”即切换为笛卡尔局部背景抑制模式；关闭“一致性滤波”可观察误检变化。</div>
+    </div>
+  </aside>
+</div>
+
+<div class="bottom">
+  <div class="bottom-head">
+    <h3>批量检测结果</h3><span class="spacer"></span>
+    <button id="btnCsv">导出 CSV</button>
+    <button id="btnJson">导出 JSON 报告</button>
+    <button id="btnPng">导出当前结果图</button>
+  </div>
+  <div style="max-height:220px;overflow:auto">
+    <table class="results"><thead><tr><th>样本</th><th>尺寸</th><th>规则框</th><th>YOLO 框</th><th>置信度/峰值</th><th>耗时</th><th>判定</th><th>查看</th></tr></thead><tbody id="resultBody"><tr><td colspan="8" class="empty">尚未检测样本</td></tr></tbody></table>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple hidden>
+<input type="file" id="projectInput" accept="application/json,.json" hidden>
+<input type="file" id="yoloInput" accept=".onnx" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+/* VisionQC core — inlined for standalone offline studio */
+/* VisionQC-Lite core algorithm — dependency-free (Node + browser UMD) */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.VisionCore = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const W = 128, H = 128, CX = 64, CY = 64, R0 = 22, R1 = 52;
+  const PW = 360, PH = 30; // polar: angle columns x radius rows
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+  function illumination(x, y, mode) {
+    if (mode === 1) return 45 * (x / W) - 22;                    // linear gradient
+    if (mode === 2) return 42 * Math.exp(-(((x - 34) ** 2 + (y - 92) ** 2) / 650)); // specular
+    return 0;                                                     // uniform
+  }
+
+  function generateImage(seed, cfg) {
+    cfg = cfg || {};
+    const rnd = mulberry32(seed);
+    const mode = cfg.lightMode == null ? (seed % 3) : cfg.lightMode; // 0/1/2
+    const kind = cfg.kind || 'normal'; // normal | scratch | notch | stain
+    const g = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const dx = x - CX + 0.5, dy = y - CY + 0.5;
+        const d = Math.sqrt(dx * dx + dy * dy), ang = Math.atan2(dy, dx);
+        let base;
+        if (d < R0) base = 88 + 5 * Math.sin(ang * 3);
+        else if (d > R1) base = 104 + 3 * Math.cos(x * 0.2);
+        else base = 172 + 7 * Math.sin(ang * 9) + 4 * Math.cos(d * 0.9);
+        const noise = (rnd() + rnd() + rnd() - 1.5) * 6;
+        g[y * W + x] = clamp(Math.round(base + illumination(x, y, mode) + noise), 0, 255);
+      }
+    }
+    const truth = [];
+    const delta = new Float32Array(W * H); // most-negative applied once per pixel
+    const track = { minX: 1e9, minY: 1e9, maxX: -1, maxY: -1, n: 0 };
+    function mark(x, y, d) {
+      x = Math.round(x); y = Math.round(y);
+      if (x < 0 || y < 0 || x >= W || y >= H) return;
+      const i = y * W + x;
+      if (d < delta[i]) delta[i] = d;
+      if (x < track.minX) track.minX = x; if (x > track.maxX) track.maxX = x;
+      if (y < track.minY) track.minY = y; if (y > track.maxY) track.maxY = y;
+      track.n++;
+    }
+    function finish(t) {
+      if (track.n > 0) truth.push({ type: t, bbox: [track.minX, track.minY, track.maxX, track.maxY], n: track.n });
+      track.minX = 1e9; track.minY = 1e9; track.maxX = -1; track.maxY = -1; track.n = 0;
+    }
+
+    if (kind === 'scratch' || kind === 'stain') {
+      const a0 = rnd() * Math.PI * 2;
+      const rc = 28 + rnd() * 16;
+      if (kind === 'scratch') {
+        const span = 0.22 + rnd() * 0.28;
+        const width = 1.2 + rnd() * 1.0;
+        const depth = 46 + rnd() * 28;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy);
+          let ang = Math.atan2(dy, dx);
+          let da = ang - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+          if (Math.abs(da) <= span / 2 && Math.abs(r - rc) <= width) mark(x, y, -depth);
+        }
+      } else {
+        const rad = 3.2 + rnd() * 2.6;
+        const cx = CX + rc * Math.cos(a0), cy = CY + rc * Math.sin(a0);
+        for (let y = Math.floor(cy - rad - 1); y <= Math.ceil(cy + rad + 1); y++) {
+          for (let x = Math.floor(cx - rad - 1); x <= Math.ceil(cx + rad + 1); x++) {
+            const d = Math.hypot(x - cx, y - cy);
+            if (d <= rad) mark(x, y, -42 * (1 - d / (rad + 0.6)));
+          }
+        }
+      }
+      finish(kind);
+    } else if (kind === 'notch') {
+      const a0 = rnd() * Math.PI * 2, span = 0.10 + rnd() * 0.08;
+      const depth = 3 + rnd() * 2;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy);
+        let ang = Math.atan2(dy, dx);
+        let da = ang - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+        if (Math.abs(da) <= span / 2 && r >= R1 - depth && r <= R1) mark(x, y, -72);
+      }
+      finish('notch');
+    }
+    for (let i = 0; i < g.length; i++) if (delta[i] < 0) g[i] = clamp(Math.round(g[i] + delta[i]), 0, 255);
+    return { w: W, h: H, gray: g, truth, meta: { seed, mode, kind } };
+  }
+
+  // row-major: index = r * PW + c  (r = radius row, c = angle column)
+  function polarUnwrap(img) {
+    const out = new Float32Array(PW * PH);
+    const g = img.gray;
+    for (let c = 0; c < PW; c++) {
+      const a = (c / PW) * Math.PI * 2;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = 0; r < PH; r++) {
+        const rr = R0 + r * ((R1 - R0) / PH);
+        const x = Math.round(CX + rr * ca), y = Math.round(CY + rr * sa);
+        out[r * PW + c] = g[clamp(y, 0, H - 1) * W + clamp(x, 0, W - 1)];
+      }
+    }
+    return out;
+  }
+
+  function boxBlur(src, w, h, kw, kh) {
+    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    const hw = kw >> 1, hh = kh >> 1;
+    for (let y = 0; y < h; y++) {
+      let sum = 0;
+      for (let k = -hw; k <= hw; k++) sum += src[y * w + clamp(k, 0, w - 1)];
+      for (let x = 0; x < w; x++) {
+        tmp[y * w + x] = sum / kw;
+        sum += src[y * w + clamp(x + hw + 1, 0, w - 1)] - src[y * w + clamp(x - hw, 0, w - 1)];
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let sum = 0;
+      for (let k = -hh; k <= hh; k++) sum += tmp[clamp(k, 0, h - 1) * w + x];
+      for (let y = 0; y < h; y++) {
+        out[y * w + x] = sum / kh;
+        sum += tmp[clamp(y + hh + 1, 0, h - 1) * w + x] - tmp[clamp(y - hh, 0, h - 1) * w + x];
+      }
+    }
+    return out;
+  }
+
+  function boxBlurCircular(src, w, h, kw, kh) {
+    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    const hw = kw >> 1, hh = kh >> 1;
+    for (let y = 0; y < h; y++) {
+      let sum = 0;
+      for (let k = -hw; k <= hw; k++) sum += src[y * w + ((k % w) + w) % w];
+      for (let x = 0; x < w; x++) {
+        tmp[y * w + x] = sum / kw;
+        sum += src[y * w + ((x + hw + 1) % w)] - src[y * w + ((x - hw) % w + w) % w];
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let sum = 0;
+      for (let k = -hh; k <= hh; k++) sum += tmp[clamp(k, 0, h - 1) * w + x];
+      for (let y = 0; y < h; y++) {
+        out[y * w + x] = sum / kh;
+        sum += tmp[clamp(y + hh + 1, 0, h - 1) * w + x] - tmp[clamp(y - hh, 0, h - 1) * w + x];
+      }
+    }
+    return out;
+  }
+
+  function connectedComponents(mask, w, h) {
+    const seen = new Uint8Array(w * h), comps = [], stack = [];
+    for (let i = 0; i < mask.length; i++) {
+      if (!mask[i] || seen[i]) continue;
+      let minX = w, minY = h, maxX = 0, maxY = 0, area = 0;
+      stack.length = 0; stack.push(i); seen[i] = 1;
+      while (stack.length) {
+        const p = stack.pop(), x = p % w, y = (p / w) | 0;
+        area++; if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const q = ny * w + nx;
+          if (mask[q] && !seen[q]) { seen[q] = 1; stack.push(q); }
+        }
+      }
+      comps.push({ minX, minY, maxX, maxY, area });
+    }
+    return comps;
+  }
+
+  function polarBoxToCartesian(minC, minR, maxC, maxR) {
+    let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1;
+    for (let c = minC; c <= maxC; c += Math.max(1, Math.floor((maxC - minC) / 6) || 1)) {
+      for (let r = minR; r <= maxR; r++) {
+        const a = (c / PW) * Math.PI * 2, rr = R0 + r * ((R1 - R0) / PH);
+        const x = CX + rr * Math.cos(a), y = CY + rr * Math.sin(a);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+    return [Math.floor(minX - 1), Math.floor(minY - 1), Math.ceil(maxX + 1), Math.ceil(maxY + 1)];
+  }
+
+  function detectOurs(img) {
+    const polar = polarUnwrap(img);
+    const smooth = boxBlurCircular(polar, PW, PH, 3, 3);
+    const bg = boxBlurCircular(smooth, PW, PH, 61, 15);
+    const residual = Float32Array.from(smooth, (v, i) => bg[i] - v);
+    const mask = new Uint8Array(PW * PH);
+    // ignore outer 2 radial rows to avoid ring-boundary bias
+    for (let r = 2; r < PH - 2; r++) for (let c = 0; c < PW; c++) {
+      mask[r * PW + c] = residual[r * PW + c] > 12 ? 1 : 0;
+    }
+    const comps = connectedComponents(mask, PW, PH);
+    const out = [];
+    for (const c of comps) {
+      const angleSpan = c.maxX - c.minX + 1, radialSpan = c.maxY - c.minY + 1;
+      // angular elongation: real defects span multiple adjacent angle columns
+      if (c.area < 5 || angleSpan < 4 || radialSpan < 1 || radialSpan > 14) continue;
+      let peak = -1e9;
+      for (let rr = c.minY; rr <= c.maxY; rr++) for (let cc = c.minX; cc <= c.maxX; cc++) {
+        const v = residual[rr * PW + cc]; if (v > peak) peak = v;
+      }
+      if (peak < 20) continue;
+      out.push({ bbox: polarBoxToCartesian(c.minX, c.minY, c.maxX, c.maxY), area: c.area, peak: +peak.toFixed(1) });
+    }
+    return { boxes: out, polar, residual };
+  }
+
+  // ablation: polar unwrap + background suppression, WITHOUT angular-consistency filter
+  function detectOursNoFilter(img) {
+    const polar = polarUnwrap(img);
+    const smooth = boxBlurCircular(polar, PW, PH, 3, 3);
+    const bg = boxBlurCircular(smooth, PW, PH, 61, 15);
+    const residual = Float32Array.from(smooth, (v, i) => bg[i] - v);
+    const mask = new Uint8Array(PW * PH);
+    for (let r = 2; r < PH - 2; r++) for (let c = 0; c < PW; c++) mask[r * PW + c] = residual[r * PW + c] > 12 ? 1 : 0;
+    const out = connectedComponents(mask, PW, PH).filter(c => c.area >= 3)
+      .map(c => ({ bbox: polarBoxToCartesian(c.minX, c.minY, c.maxX, c.maxY), area: c.area }));
+    return { boxes: out, residual };
+  }
+
+  function detectBaselineOtsu(img) {
+    const g = img.gray, hist = new Float64Array(256);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x - CX, y - CY);
+      if (d >= R0 && d <= R1) hist[g[y * W + x]]++;
+    }
+    let total = 0, sum = 0;
+    for (let t = 0; t < 256; t++) { total += hist[t]; sum += t * hist[t]; }
+    let wB = 0, sumB = 0, best = -1, thr = 0;
+    for (let t = 0; t < 256; t++) {
+      wB += hist[t]; if (!wB) continue;
+      const wF = total - wB; if (!wF) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB, mF = (sum - sumB) / wF;
+      const v = wB * wF * (mB - mF) * (mB - mF);
+      if (v > best) { best = v; thr = t; }
+    }
+    const mask = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x - CX, y - CY);
+      mask[y * W + x] = (d >= R0 && d <= R1 && g[y * W + x] < thr) ? 1 : 0;
+    }
+    return { boxes: connectedComponents(mask, W, H).filter(c => c.area >= 3).map(c => ({ bbox: [c.minX, c.minY, c.maxX, c.maxY], area: c.area })), threshold: thr };
+  }
+
+  function detectBaselineAdaptive(img) {
+    const g = Float32Array.from(img.gray);
+    const bg = boxBlur(g, W, H, 25, 25);
+    const mask = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x - CX, y - CY);
+      const i = y * W + x;
+      mask[i] = (d >= R0 && d <= R1 && bg[i] - g[i] > 18) ? 1 : 0;
+    }
+    return { boxes: connectedComponents(mask, W, H).filter(c => c.area >= 3).map(c => ({ bbox: [c.minX, c.minY, c.maxX, c.maxY], area: c.area })) };
+  }
+
+  function match(predBoxes, truth) {
+    const used = new Set(); let tp = 0;
+    for (const t of truth) {
+      const tx = (t.bbox[0] + t.bbox[2]) / 2, ty = (t.bbox[1] + t.bbox[3]) / 2;
+      let best = -1, bd = 1e9;
+      for (let i = 0; i < predBoxes.length; i++) {
+        if (used.has(i)) continue;
+        const b = predBoxes[i].bbox;
+        const d = Math.hypot((b[0] + b[2]) / 2 - tx, (b[1] + b[3]) / 2 - ty);
+        if (d < bd) { bd = d; best = i; }
+      }
+      if (best >= 0 && bd <= 7) { tp++; used.add(best); }
+    }
+    return { tp, fp: predBoxes.length - used.size, fn: truth.length - tp };
+  }
+
+  function makeDataset(count, seedBase) {
+    const items = [], kinds = ['normal', 'scratch', 'notch', 'stain'];
+    for (let i = 0; i < count; i++) {
+      const kind = i % 4 === 0 ? 'normal' : kinds[i % 4];
+      const mode = (i / 4 | 0) % 3;
+      items.push(generateImage((seedBase || 1000) + i, { kind, lightMode: mode }));
+    }
+    return items;
+  }
+
+  function evaluate(items, detectors) {
+    const res = {};
+    for (const name of Object.keys(detectors)) {
+      const agg = { tp: 0, fp: 0, fn: 0, byMode: [0, 1, 2].map(() => ({ tp: 0, fp: 0, fn: 0 })) };
+      for (const img of items) {
+        const det = detectors[name](img);
+        const m = match(det.boxes, img.truth);
+        agg.tp += m.tp; agg.fp += m.fp; agg.fn += m.fn;
+        const bm = agg.byMode[img.meta.mode];
+        bm.tp += m.tp; bm.fp += m.fp; bm.fn += m.fn;
+      }
+      const p = agg.tp / (agg.tp + agg.fp) || 0;
+      const r = agg.tp / (agg.tp + agg.fn) || 0;
+      res[name] = { tp: agg.tp, fp: agg.fp, fn: agg.fn, precision: +p.toFixed(4), recall: +r.toFixed(4), f1: +(2 * p * r / (p + r) || 0).toFixed(4), byMode: agg.byMode.map(b => ({ ...b, recall: +(b.tp / (b.tp + b.fn) || 0).toFixed(4), precision: +(b.tp / (b.tp + b.fp) || 0).toFixed(4) })) };
+    }
+    return res;
+  }
+
+  /* ----------------------------------------------------------------------
+   * Generic / parameterized API for the visual-inspection studio.
+   * These functions work on images of any size and do not alter the
+   * legacy 128x128 pipeline above, so the published evaluation is stable.
+   * -------------------------------------------------------------------- */
+
+  function toGray(rgba, w, h) {
+    const g = new Uint8Array(w * h);
+    for (let i = 0, p = 0; i < g.length; i++, p += 4) {
+      g[i] = clamp(Math.round(0.299 * rgba[p] + 0.587 * rgba[p + 1] + 0.114 * rgba[p + 2]), 0, 255);
+    }
+    return g;
+  }
+
+  function autoStretch(src) {
+    let lo = 255, hi = 0;
+    for (let i = 0; i < src.length; i++) { const v = src[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (hi - lo < 8) return Uint8Array.from(src);
+    const out = new Uint8Array(src.length), k = 255 / (hi - lo);
+    for (let i = 0; i < src.length; i++) out[i] = clamp(Math.round((src[i] - lo) * k), 0, 255);
+    return out;
+  }
+
+  function estimateROI(img) {
+    const { w, h, gray: g } = img;
+    // border median approximates the background / conveyor colour
+    const border = [];
+    const step = Math.max(1, Math.floor(Math.min(w, h) / 60));
+    for (let x = 0; x < w; x += step) { border.push(g[x], g[(h - 1) * w + x]); }
+    for (let y = 0; y < h; y += step) { border.push(g[y * w], g[y * w + w - 1]); }
+    border.sort((a, b) => a - b);
+    const bg = border[border.length >> 1] || 128;
+    let minX = w, minY = h, maxX = -1, maxY = -1, n = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (Math.abs(g[y * w + x] - bg) > 16) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        n++;
+      }
+    }
+    if (n < 20 || maxX < 0) {
+      const r = Math.min(w, h) * 0.36;
+      return { cx: w / 2, cy: h / 2, r0: r * 0.45, r1: r * 0.95, x0: w / 2 - r, y0: h / 2 - r, x1: w / 2 + r, y1: h / 2 + r, bg, auto: false };
+    }
+    const cx = (minX + maxX + 1) / 2, cy = (minY + maxY + 1) / 2;
+    const rOuter = Math.max(4, Math.min((maxX - minX + 1), (maxY - minY + 1)) * 0.48);
+    return {
+      cx, cy,
+      r0: Math.max(2, rOuter * 0.42), r1: rOuter * 0.98,
+      x0: minX, y0: minY, x1: maxX, y1: maxY,
+      bg, auto: true
+    };
+  }
+
+  function polarUnwrapEx(img, cfg) {
+    const pw = cfg.pw || 360, ph = cfg.ph || 30;
+    const { cx, cy, r0, r1 } = cfg;
+    const out = new Float32Array(pw * ph);
+    const { w, h, gray: g } = img;
+    for (let c = 0; c < pw; c++) {
+      const a = (c / pw) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = 0; r < ph; r++) {
+        const rr = r0 + r * ((r1 - r0) / ph);
+        const x = Math.round(cx + rr * ca), y = Math.round(cy + rr * sa);
+        out[r * pw + c] = (x >= 0 && y >= 0 && x < w && y < h) ? g[y * w + x] : 128;
+      }
+    }
+    return out;
+  }
+
+  function polarBoxToCartesianEx(minC, minR, maxC, maxR, cfg) {
+    const pw = cfg.pw || 360, ph = cfg.ph || 30;
+    let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1;
+    const stepCol = Math.max(1, Math.floor((maxC - minC) / 6) || 1);
+    for (let c = minC; c <= maxC; c += stepCol) {
+      for (let r = minR; r <= maxR; r++) {
+        const a = (c / pw) * Math.PI * 2, rr = cfg.r0 + r * ((cfg.r1 - cfg.r0) / ph);
+        const x = cfg.cx + rr * Math.cos(a), y = cfg.cy + rr * Math.sin(a);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+    return [Math.floor(minX - 1), Math.floor(minY - 1), Math.ceil(maxX + 1), Math.ceil(maxY + 1)];
+  }
+
+  // Standard-order convenience detector using the generic primitives.
+  function detectEx(img, cfg) {
+    const roi = cfg.roi || estimateROI(img);
+    const polar = polarUnwrapEx(img, { ...roi, pw: cfg.pw || 360, ph: cfg.ph || 30 });
+    const smooth = boxBlurCircular(polar, cfg.pw || 360, cfg.ph || 30, cfg.smoothKw || 3, cfg.smoothKh || 3);
+    const bg = boxBlurCircular(smooth, cfg.pw || 360, cfg.ph || 30, cfg.bgKw || 61, cfg.bgKh || 15);
+    const residual = Float32Array.from(smooth, (v, i) => bg[i] - v);
+    const mask = new Uint8Array(polar.length);
+    for (let i = 0; i < mask.length; i++) mask[i] = residual[i] > (cfg.threshold || 12) ? 1 : 0;
+    const comps = connectedComponents(mask, cfg.pw || 360, cfg.ph || 30);
+    const boxes = [];
+    for (const c of comps) {
+      const span = c.maxX - c.minX + 1, rspan = c.maxY - c.minY + 1;
+      if (c.area < (cfg.minArea || 5) || span < (cfg.minSpan || 4) || rspan > 14) continue;
+      boxes.push({ bbox: polarBoxToCartesianEx(c.minX, c.minY, c.maxX, c.maxY, roi), area: c.area });
+    }
+    return { boxes, roi, polar, residual, mask };
+  }
+
+  return { W, H, R0, R1, PW, PH, mulberry32, generateImage, polarUnwrap, boxBlur, boxBlurCircular, connectedComponents, detectOurs, detectOursNoFilter, detectBaselineOtsu, detectBaselineAdaptive, match, makeDataset, evaluate, toGray, autoStretch, estimateROI, polarUnwrapEx, polarBoxToCartesianEx, detectEx };
+});
+
+</script>
+<script>
+(function(){
+  if(!window.VisionCore){document.body.innerHTML='<p style="padding:40px">未能加载 vision-core.js</p>';return;}
+  const V=window.VisionCore, $=id=>document.getElementById(id);
+  const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+  const MODULES=[
+    {id:'gray',name:'灰度化',desc:'RGB → 8-bit 灰度',fixed:true,locked:true,params:[]},
+    {id:'denoise',name:'均值去噪',desc:'盒滤波抑制噪声',params:[{k:'k',label:'核大小',min:1,max:11,step:2}]},
+    {id:'contrast',name:'自动对比度',desc:'灰度拉伸至 0–255',params:[]},
+    {id:'roi',name:'ROI 区域定义',desc:'环形或矩形检测范围',fixed:true,locked:true,params:[]},
+    {id:'unwrap',name:'极坐标展开',desc:'环形 ROI → 角度×半径条带',params:[{k:'pw',label:'角度 bins',min:90,max:720,step:30},{k:'ph',label:'径向 bins',min:10,max:80,step:5}]},
+    {id:'smooth',name:'环向平滑',desc:'消除极坐标接缝伪边缘',params:[{k:'smoothKw',label:'角度核',min:1,max:15,step:2},{k:'smoothKh',label:'径向核',min:1,max:9,step:2}]},
+    {id:'background',name:'自适应背景抑制',desc:'大窗口估计缓变背景',params:[{k:'bgKw',label:'背景宽',min:5,max:121,step:2},{k:'bgKh',label:'背景高',min:3,max:41,step:2}]},
+    {id:'segment',name:'缺陷分割',desc:'残差阈值二值化',params:[{k:'threshold',label:'残差阈值',min:2,max:80,step:1},{k:'edgeSkip',label:'边缘忽略',min:0,max:8,step:1}]},
+    {id:'filter',name:'连通域与一致性滤波',desc:'面积 / 跨度 / 峰值约束',params:[{k:'minArea',label:'最小面积',min:1,max:60,step:1},{k:'minSpan',label:'最小跨度',min:1,max:20,step:1},{k:'maxSpan',label:'最大径向跨度',min:2,max:30,step:1},{k:'minPeak',label:'最小峰值',min:0,max:100,step:2}]},
+    {id:'output',name:'结果输出',desc:'缺陷框 / 统计 / 导出',fixed:true,locked:true,params:[]}
+  ];
+  const DEFAULTS={k:3,pw:360,ph:30,smoothKw:3,smoothKh:3,bgKw:61,bgKh:15,threshold:12,edgeSkip:2,minArea:5,minSpan:4,maxSpan:14,minPeak:20};
+  const state={
+    images:[],current:null,result:null,roiTouched:false,batchMode:false,
+    yolo:null,yoloEnabled:true,yoloBusy:false,runId:0,ortReady:false,
+    cfg:{roiType:'ring',roi:{cx:64,cy:64,r0:22,r1:52,x0:12,y0:12,x1:116,y1:116},params:{...DEFAULTS},pipeline:[]}
+  };
+  state.cfg.pipeline=MODULES.map(m=>({id:m.id,enabled:m.id!=='denoise'&&m.id!=='contrast',fixed:!!m.fixed,locked:!!m.locked}));
+
+  function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+  function def(id){return MODULES.find(m=>m.id===id);}
+  function roi(){return state.cfg.roi;}
+  function P(){return state.cfg.params;}
+
+  /* ---------------- pipeline ---------------- */
+  function renderPipeline(){
+    const box=$('pipeline');box.innerHTML='';
+    state.cfg.pipeline.forEach((p,i)=>{
+      const d=def(p.id);
+      const el=document.createElement('div');el.className='mod'+(p.enabled?'':' off');
+      const params=d.params.map(q=>'<label>'+q.label+'<input type="number" data-key="'+q.k+'" min="'+q.min+'" max="'+q.max+'" step="'+q.step+'" value="'+P()[q.k]+'"></label>').join('');
+      el.innerHTML='<div class="mod-head">'
+        +'<input type="checkbox" data-toggle="'+i+'" '+(p.enabled?'checked':'')+' '+(d.fixed?'disabled':'')+'>'
+        +'<div class="txt"><b>'+(i+1)+'. '+d.name+'</b><small>'+d.desc+'</small></div>'
+        +'<div class="mod-actions"><button data-up="'+i+'" '+(i===0||d.locked||def(state.cfg.pipeline[i-1].id).locked?'disabled':'')+'>↑</button>'
+        +'<button data-down="'+i+'" '+(i===state.cfg.pipeline.length-1||d.locked||def(state.cfg.pipeline[i+1].id).locked?'disabled':'')+'>↓</button></div></div>'
+        +(params?'<div class="mod-params">'+params+'</div>':'');
+      box.appendChild(el);
+    });
+  }
+  $('pipeline').addEventListener('input',e=>{
+    const k=e.target.dataset.key;if(!k)return;
+    P()[k]=parseFloat(e.target.value);schedule();
+  });
+  $('pipeline').addEventListener('change',e=>{
+    const i=e.target.dataset.toggle;if(i===undefined)return;
+    state.cfg.pipeline[+i].enabled=e.target.checked;renderPipeline();schedule();
+  });
+  $('pipeline').addEventListener('click',e=>{
+    const up=e.target.dataset.up,dn=e.target.dataset.down;
+    let i=-1,j=-1;
+    if(up!==undefined){i=+up;j=i-1;}
+    else if(dn!==undefined){i=+dn;j=i+1;}
+    else return;
+    const a=state.cfg.pipeline;
+    if(j<0||j>=a.length)return;
+    [a[i],a[j]]=[a[j],a[i]];renderPipeline();schedule();
+  });
+
+  function runPipeline(){
+    const src=state.current;if(!src)return null;
+    const p=P(),r=roi(),pw=p.pw,ph=p.ph;
+    let img={w:src.w,h:src.h,gray:Uint8Array.from(src.gray)};
+    let polar=null,smooth=null,residual=null,mask=null,maskW=img.w,maskH=img.h,comps=[],boxes=[],log=[];
+    const all=[];
+    for(const mod of state.cfg.pipeline){
+      const d=def(mod.id);
+      if(!mod.enabled&&!d.fixed){log.push({name:d.name,skip:true,ms:0,detail:'已禁用'});continue;}
+      const t=performance.now();let detail='—';
+      switch(mod.id){
+        case 'gray':detail=img.w+'×'+img.h+' 8-bit';break;
+        case 'denoise':img.gray=V.boxBlur(img.gray,img.w,img.h,p.k,p.k);detail='核 '+p.k+'×'+p.k;break;
+        case 'contrast':img.gray=V.autoStretch(img.gray);detail='灰度拉伸';break;
+        case 'roi':detail=state.cfg.roiType==='ring'?'环形 '+r.r0.toFixed(0)+'–'+r.r1.toFixed(0)+' @('+r.cx.toFixed(0)+','+r.cy.toFixed(0)+')':'矩形 ['+r.x0+','+r.y0+'–'+r.x1+','+r.y1+']';break;
+        case 'unwrap':
+          if(state.cfg.roiType==='ring'){polar=V.polarUnwrapEx(img,{...r,pw,ph});detail=pw+'×'+ph+' 条带';}
+          else detail='矩形 ROI，跳过';
+          break;
+        case 'smooth':
+          if(polar){smooth=V.boxBlurCircular(polar,pw,ph,p.smoothKw,p.smoothKh);detail='环向 '+p.smoothKw+'×'+p.smoothKh;}
+          else{smooth=V.boxBlur(img.gray,img.w,img.h,p.smoothKw,p.smoothKh);detail='局部 '+p.smoothKw+'×'+p.smoothKh;}
+          break;
+        case 'background':{
+          const base=smooth||Float32Array.from(img.gray);
+          if(polar){const bg=V.boxBlurCircular(base,pw,ph,p.bgKw,p.bgKh);residual=Float32Array.from(base,(v,i)=>bg[i]-v);}
+          else{const bg=V.boxBlur(base,img.w,img.h,p.bgKw,p.bgKh);residual=Float32Array.from(base,(v,i)=>bg[i]-v);}
+          detail='背景窗 '+p.bgKw+'×'+p.bgKh;break;
+        }
+        case 'segment':{
+          const base=residual||(polar?polar:Float32Array.from(img.gray));
+          maskW=polar?pw:img.w;maskH=polar?ph:img.h;mask=new Uint8Array(maskW*maskH);
+          if(polar){
+            for(let rr=p.edgeSkip;rr<ph-p.edgeSkip;rr++)for(let c=0;c<pw;c++)mask[rr*pw+c]=base[rr*pw+c]>p.threshold?1:0;
+          }else{
+            for(let y=0;y<img.h;y++)for(let x=0;x<img.w;x++){
+              let inside=x>=r.x0&&x<=r.x1&&y>=r.y0&&y<=r.y1;
+              if(state.cfg.roiType==='ring'){const dd=Math.hypot(x-r.cx,y-r.cy);inside=dd>=r.r0&&dd<=r.r1;}
+              if(inside&&base[y*img.w+x]>p.threshold)mask[y*img.w+x]=1;
+            }
+          }
+          let cnt=0;for(const v of mask)cnt+=v;detail='阈值 '+p.threshold+' → '+cnt+' px';break;
+        }
+        case 'filter':{
+          if(!mask){detail='无掩膜，跳过';break;}
+          all.length=0;all.push(...V.connectedComponents(mask,maskW,maskH));
+          comps.length=0;
+          for(const c of all){
+            const span=c.maxX-c.minX+1,rs=c.maxY-c.minY+1;
+            if(c.area<p.minArea||span<p.minSpan||rs>p.maxSpan)continue;
+            let peak=-1e9;
+            if(residual)for(let rr=c.minY;rr<=c.maxY;rr++)for(let cc=c.minX;cc<=c.maxX;cc++){const v=residual[rr*maskW+cc];if(v>peak)peak=v;}
+            if(peak<p.minPeak)continue;
+            comps.push({...c,peak:+peak.toFixed(1)});
+          }
+          detail=comps.length+' / '+all.length+' 保留';break;
+        }
+        case 'output':{
+          if(!comps.length&&mask){all.length=0;all.push(...V.connectedComponents(mask,maskW,maskH));for(const c of all)comps.push({...c,peak:c.area});}
+          boxes=comps.map(c=>({bbox:polar?V.polarBoxToCartesianEx(c.minX,c.minY,c.maxX,c.maxY,{...r,pw,ph}):[c.minX,c.minY,c.maxX,c.maxY],area:c.area,peak:c.peak||0}));
+          detail=boxes.length+' 个缺陷框';break;
+        }
+      }
+      log.push({name:d.name,ms:performance.now()-t,detail});
+    }
+    return {img,polar,smooth,residual,mask,maskW,maskH,boxes,allCount:all.length,log,totalMs:performance.now(),roi:r};
+  }
+
+  /* ---------------- YOLO / ONNX Runtime Web ---------------- */
+  const YOLO_CLASSES=['scratch','notch','stain'];
+  async function ensureORT(){
+    if(window.ort)return window.ort;
+    $('yoloStatus').textContent='正在加载 onnxruntime-web（首次需要联网）…';
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.bundle.min.js';
+      s.onload=resolve;
+      s.onerror=()=>reject(new Error('无法从 CDN 加载 onnxruntime-web，请联网或本地部署'));
+      document.head.appendChild(s);
+    });
+    return window.ort;
+  }
+  function grayToRGBA(g){const a=new Uint8Array(g.length*4);for(let i=0;i<g.length;i++){a[i*4]=a[i*4+1]=a[i*4+2]=g[i];a[i*4+3]=255;}return a;}
+  function letterbox(color,w,h,size){
+    const scale=Math.min(size/w,size/h),nw=Math.max(1,Math.round(w*scale)),nh=Math.max(1,Math.round(h*scale));
+    const px=(size-nw)/2,py=(size-nh)/2,data=new Float32Array(size*size*3);
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+      const o=(y*size+x)*3;let r=114,g=114,b=114;
+      const sx=Math.floor((x-px)/scale),sy=Math.floor((y-py)/scale);
+      if(sx>=0&&sy>=0&&sx<w&&sy<h){const k=(sy*w+sx)*4;r=color[k];g=color[k+1];b=color[k+2];}
+      data[o]=r/255;data[o+1]=g/255;data[o+2]=b/255;
+    }
+    return {data,scale,px,py};
+  }
+  function iou(a,b){
+    const x1=Math.max(a.bbox[0],b.bbox[0]),y1=Math.max(a.bbox[1],b.bbox[1]);
+    const x2=Math.min(a.bbox[2],b.bbox[2]),y2=Math.min(a.bbox[3],b.bbox[3]);
+    const iw=Math.max(0,x2-x1),ih=Math.max(0,y2-y1),inter=iw*ih;
+    const aa=Math.max(0,a.bbox[2]-a.bbox[0])*Math.max(0,a.bbox[3]-a.bbox[1]);
+    const bb=Math.max(0,b.bbox[2]-b.bbox[0])*Math.max(0,b.bbox[3]-b.bbox[1]);
+    return inter/(aa+bb-inter+1e-6);
+  }
+  function nms(dets,thr){
+    dets.sort((a,b)=>b.score-a.score);const keep=[];
+    for(const d of dets)if(keep.every(k=>iou(d,k)<thr))keep.push(d);
+    return keep.slice(0,100);
+  }
+  function decodeYOLO(raw,dims,lb,size,conf,nmsThr){
+    const out=[];
+    if(dims.length===4&&dims[0]===1&&dims[2]>1){
+      const ch=Math.min(dims[1],dims[2]),N=Math.max(dims[1],dims[2]);
+      if(ch<5||ch>120)return out;
+      for(let i=0;i<N;i++){
+        let cls=0,best=0;
+        for(let c=4;c<ch;c++){const v=dims[1]===ch?raw[c*N+i]:raw[i*ch+c];if(v>best){best=v;cls=c-4;}}
+        if(best<conf)continue;
+        const g=k=>dims[1]===ch?raw[k*N+i]:raw[i*ch+k];
+        let cx=g(0),cy=g(1),bw=g(2),bh=g(3);
+        if(Math.max(cx,cy,bw,bh)<=2){cx*=size;cy*=size;bw*=size;bh*=size;}
+        out.push({bbox:[(cx-bw/2-lb.px)/lb.scale,(cy-bh/2-lb.py)/lb.scale,(cx+bw/2-lb.px)/lb.scale,(cy+bh/2-lb.py)/lb.scale],score:+best.toFixed(3),cls});
+      }
+    }else if(dims.length===3&&dims[2]>=6){
+      for(let i=0;i<dims[1];i++){
+        const p=i*dims[2],score=raw[p+4];if(score<conf)continue;
+        out.push({bbox:[(raw[p]-lb.px)/lb.scale,(raw[p+1]-lb.py)/lb.scale,(raw[p+2]-lb.px)/lb.scale,(raw[p+3]-lb.py)/lb.scale],score:+score.toFixed(3),cls:Math.round(raw[p+5])||0});
+      }
+    }
+    return nms(out,nmsThr);
+  }
+  async function inferYOLO(src){
+    if(!state.yolo||!src.color)return null;
+    const ort=await ensureORT();
+    const size=parseInt($('yoloSize').value)||640;
+    const lb=letterbox(src.color,src.w,src.h,size);
+    const tensor=new ort.Tensor('float32',lb.data,[1,3,size,size]);
+    const t=performance.now();
+    const out=await state.yolo.session.run({[state.yolo.input]:tensor});
+    const o=out[state.yolo.output];
+    return {boxes:decodeYOLO(o.data,o.dims,lb,size,+$('yoloConf').value||0.25,+$('yoloNms').value||0.45),ms:performance.now()-t,name:state.yolo.name};
+  }
+  $('btnLoadYolo').addEventListener('click',()=>$('yoloInput').click());
+  $('yoloInput').addEventListener('change',async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      $('yoloStatus').textContent='正在解析 '+f.name+'…';
+      const ort=await ensureORT();
+      ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+      const buf=await f.arrayBuffer();
+      const sess=await ort.InferenceSession.create(buf,{executionProviders:['wasm']});
+      state.yolo={name:f.name,session:sess,input:sess.inputNames[0],output:sess.outputNames[0]};
+      $('yoloStatus').innerHTML='<span style="color:var(--green)">已载入 '+f.name+'</span><br>输入张量：'+sess.inputNames[0];
+      toast('YOLO 模型已载入');
+      runAndRender();
+    }catch(err){$('yoloStatus').textContent='载入失败：'+err.message;toast('YOLO 模型载入失败');}
+    e.target.value='';
+  });
+  ['yoloOn','yoloConf','yoloNms','yoloSize'].forEach(id=>$(id).addEventListener('change',()=>{
+    state.yoloEnabled=$('yoloOn').checked;schedule();
+  }));
+
+  /* ---------------- drawing ---------------- */
+  function putGray(canvas,arr,w,h){
+    canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d'),im=ctx.createImageData(w,h);
+    for(let i=0;i<arr.length;i++){const v=clamp(arr[i],0,255);im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255;}
+    ctx.putImageData(im,0,0);
+  }
+  function drawSrc(res,src){
+    putGray($('cSrc'),res.img.gray,res.img.w,res.img.h);
+    const ctx=$('cSrc').getContext('2d'),r=res.roi;
+    ctx.lineWidth=1.5;ctx.strokeStyle='#2ad4c9';
+    if(state.cfg.roiType==='ring'){
+      ctx.beginPath();ctx.arc(r.cx,r.cy,r.r1,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.arc(r.cx,r.cy,r.r0,0,Math.PI*2);ctx.stroke();
+    }else ctx.strokeRect(r.x0,r.y0,r.x1-r.x0,r.y1-r.y0);
+    if(src.truth){ctx.strokeStyle='#ff6272';for(const t of src.truth){const b=t.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}}
+  }
+  function drawPolarView(res){
+    const c=$('cPolar');
+    if(!res.polar){c.width=360;c.height=30;const x=c.getContext('2d');x.fillStyle='#132438';x.fillRect(0,0,360,30);x.fillStyle='#90aac6';x.font='12px sans-serif';x.fillText('极坐标模块已禁用',110,19);return;}
+    const w=P().pw,h=P().ph,arr=res.polar;
+    c.width=w;c.height=h;const ctx=c.getContext('2d'),im=ctx.createImageData(w,h);
+    let mn=1e9,mx=-1e9;for(const v of arr){if(v<mn)mn=v;if(v>mx)mx=v;}
+    for(let i=0;i<arr.length;i++){const v=clamp((arr[i]-mn)/(mx-mn||1)*255,0,255);im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255;}
+    ctx.putImageData(im,0,0);
+  }
+  function drawResidual(res){
+    const c=$('cResid');
+    if(!res.residual){c.width=360;c.height=30;const x=c.getContext('2d');x.fillStyle='#132438';x.fillRect(0,0,360,30);x.fillStyle='#90aac6';x.font='12px sans-serif';x.fillText('背景抑制模块已禁用',110,19);return;}
+    const w=res.maskW,h=res.maskH,arr=res.residual,mask=res.mask;
+    c.width=w;c.height=h;const ctx=c.getContext('2d'),im=ctx.createImageData(w,h);
+    for(let i=0;i<arr.length;i++){
+      const v=clamp(arr[i]*3,0,255);
+      im.data[i*4]=v;im.data[i*4+1]=v;im.data[i*4+2]=clamp(v*0.45,0,255);
+      im.data[i*4+3]=mask&&mask[i]?255:190;
+      if(mask&&mask[i]){im.data[i*4]=255;im.data[i*4+1]=90;im.data[i*4+2]=200;}
+    }
+    ctx.putImageData(im,0,0);
+  }
+  function drawDet(res,src,yres){
+    putGray($('cDet'),res.img.gray,res.img.w,res.img.h);
+    const ctx=$('cDet').getContext('2d');
+    ctx.font='10px sans-serif';
+    if(yres){
+      // rule engine as transparent dashed baseline
+      ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.strokeStyle='rgba(57,224,138,.65)';
+      for(const d of res.boxes){const b=d.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}
+      ctx.setLineDash([]);
+      // YOLO primary result
+      ctx.lineWidth=2;ctx.strokeStyle='#ffb648';ctx.fillStyle='#ffb648';
+      yres.boxes.forEach(d=>{
+        const b=d.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);
+        const name=YOLO_CLASSES[d.cls]||('cls'+d.cls);
+        ctx.fillText(name+' '+d.score.toFixed(2),b[0]+1,Math.max(9,b[1]-2));
+      });
+    }else{
+      ctx.lineWidth=1.5;ctx.strokeStyle='#39e08a';ctx.fillStyle='#39e08a';
+      res.boxes.forEach((d,i)=>{
+        const b=d.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);
+        ctx.fillText('#'+(i+1),b[0]+1,Math.max(9,b[1]-2));
+      });
+    }
+    if(src.truth){ctx.strokeStyle='#ff6272';ctx.lineWidth=1;for(const t of src.truth){const b=t.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}}
+  }
+
+  /* ---------------- UI sync ---------------- */
+  function syncRoiInputs(){
+    const r=roi();
+    $('roiCx').value=Math.round(r.cx);$('roiCy').value=Math.round(r.cy);
+    $('roiR0').value=Math.round(r.r0);$('roiR1').value=Math.round(r.r1);
+    $('roiX0').value=Math.round(r.x0);$('roiY0').value=Math.round(r.y0);
+    $('roiX1').value=Math.round(r.x1);$('roiY1').value=Math.round(r.y1);
+    $('roiType').value=state.cfg.roiType;
+    $('ringRoi').style.display=state.cfg.roiType==='ring'?'':'none';
+    $('rectRoi').style.display=state.cfg.roiType==='ring'?'none':'';
+  }
+  function readRoiInputs(){
+    const r=roi();
+    r.cx=+$('roiCx').value||0;r.cy=+$('roiCy').value||0;
+    r.r0=Math.max(1,+$('roiR0').value||1);r.r1=Math.max(r.r0+1,+$('roiR1').value||2);
+    r.x0=+$('roiX0').value||0;r.y0=+$('roiY0').value||0;
+    r.x1=Math.max(r.x0+1,+$('roiX1').value||1);r.y1=Math.max(r.y0+1,+$('roiY1').value||1);
+    state.roiTouched=true;
+  }
+  ['roiCx','roiCy','roiR0','roiR1','roiX0','roiY0','roiX1','roiY1'].forEach(id=>$(id).addEventListener('change',()=>{readRoiInputs();schedule();}));
+  $('roiType').addEventListener('change',()=>{state.cfg.roiType=$('roiType').value;syncRoiInputs();schedule();});
+
+  function renderThumbs(){
+    const box=$('thumbs');box.innerHTML='';
+    state.images.forEach((im,i)=>{
+      const el=document.createElement('div');el.className='thumb'+(im===state.current?' sel':'');
+      const cv=document.createElement('canvas');cv.width=42;cv.height=42;
+      const cctx=cv.getContext('2d'),tmp=document.createElement('canvas');tmp.width=im.w;tmp.height=im.h;
+      const tctx=tmp.getContext('2d'),td=tctx.createImageData(im.w,im.h);
+      for(let k=0;k<im.gray.length;k++){const v=im.gray[k];td.data[k*4]=td.data[k*4+1]=td.data[k*4+2]=v;td.data[k*4+3]=255;}
+      tctx.putImageData(td,0,0);cctx.drawImage(tmp,0,0,42,42);
+      el.appendChild(cv);
+      const info=document.createElement('div');info.className='info';
+      info.innerHTML='<div class="name">'+(im.name||'合成样本')+'</div><div class="meta">'+im.w+'×'+im.h+(im.result?' · '+im.result.count+' 框':' · 未检测')+'</div>';
+      el.appendChild(info);box.appendChild(el);
+      el.addEventListener('click',()=>{state.current=im;renderThumbs();runAndRender();});
+    });
+  }
+  function renderResults(){
+    const body=$('resultBody');body.innerHTML='';
+    if(!state.images.length){body.innerHTML='<tr><td colspan="8" class="empty">尚未检测样本</td></tr>';return;}
+    state.images.forEach(im=>{
+      const r=im.result;const tr=document.createElement('tr');
+      const y=r&&r.yolo?r.yolo:null;
+      const verdict=y?(y.count?'<span class="tag ok">YOLO 检出</span>':'<span class="tag bad">YOLO 未检出</span>'):(r?(r.count?'<span class="tag ok">规则检出</span>':'<span class="tag bad">规则未检出</span>'):'—');
+      tr.innerHTML='<td>'+(im.name||'合成样本')+'</td><td>'+im.w+'×'+im.h+'</td><td>'+(r?r.count:'—')+'</td><td>'+(y?y.count:'—')+'</td><td>'+(y?y.score.toFixed(2):(r?r.peak.toFixed(1):'—'))+'</td><td>'+(y?y.ms.toFixed(0)+' ms':(r?r.ms.toFixed(1)+' ms':'—'))+'</td><td>'+verdict+'</td><td><button data-view="'+state.images.indexOf(im)+'">查看</button></td>';
+      body.appendChild(tr);
+    });
+  }
+  $('resultBody').addEventListener('click',e=>{
+    const i=e.target.dataset.view;if(i===undefined)return;
+    state.current=state.images[+i];renderThumbs();runAndRender();
+  });
+
+  function renderLog(log){
+    const b=$('logBody');b.innerHTML='';
+    log.forEach((l,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>'+(i+1)+'</td><td>'+l.name+'</td><td class="'+(l.skip?'skip':'')+'">'+(l.skip?'跳过':'执行')+'</td><td>'+l.detail+'</td><td>'+(l.skip?'—':l.ms.toFixed(2)+' ms')+'</td>';
+      b.appendChild(tr);
+    });
+  }
+
+  let timer=null;
+  function schedule(){clearTimeout(timer);timer=setTimeout(()=>runAndRender(),140);}
+  async function runAndRender(){
+    if(!state.current)return;
+    const runId=++state.runId;
+    const t=performance.now();
+    const res=runPipeline();if(!res)return;
+    res.totalMs=performance.now()-t;state.result=res;
+    const peak=res.boxes.reduce((m,b)=>Math.max(m,b.peak||0),0);
+    drawSrc(res,state.current);drawPolarView(res);drawResidual(res);
+    $('srcLabel').textContent=state.current.w+'×'+state.current.h;
+    $('polarLabel').textContent=res.polar?(P().pw+'×'+P().ph):'已禁用';
+    $('maskLabel').textContent=res.mask?res.maskW+'×'+res.maskH:'—';
+
+    let yres=null;
+    if(state.yolo&&state.yoloEnabled&&state.current.color&&!state.yoloBusy){
+      state.yoloBusy=true;
+      try{yres=await inferYOLO(state.current);}
+      catch(err){$('yoloStatus').textContent='推理失败：'+err.message;}
+      state.yoloBusy=false;
+    }
+    if(runId!==state.runId)return; // a newer run superseded this one
+
+    drawDet(res,state.current,yres);
+    const score=yres?yres.boxes.reduce((m,b)=>Math.max(m,b.score),0):0;
+    state.current.result={
+      count:res.boxes.length,peak,ms:yres?yres.ms:res.totalMs,
+      boxes:res.boxes.map(b=>({bbox:b.bbox,area:b.area,peak:b.peak})),
+      yolo:yres?{count:yres.boxes.length,score,ms:yres.ms,name:yres.name,boxes:yres.boxes}:null
+    };
+    $('detLabel').textContent=(yres?'YOLO '+yres.boxes.length:res.boxes.length)+' boxes';
+    $('stCount').textContent=yres?yres.boxes.length:res.boxes.length;
+    $('stPeak').textContent=yres?(score?score.toFixed(2):'—'):(peak?peak.toFixed(1):'—');
+    $('stKeep').textContent=(res.boxes.length)+' / '+(res.allCount||0);
+    $('stTime').textContent=(yres?yres.ms:res.totalMs).toFixed(1)+' ms';
+    const verdict=yres?(yres.boxes.length?'YOLO 检出 '+yres.boxes.length+' 处':'YOLO 未检出缺陷'):(res.boxes.length?'规则检出 '+res.boxes.length+' 处缺陷':'未检出缺陷');
+    $('statusText').textContent=(state.current.name||'合成样本')+' · '+verdict+(yres?'（虚线=规则基线 '+res.boxes.length+' 框）':'')+' · '+(yres?yres.ms:res.totalMs).toFixed(1)+' ms';
+    const log=yres?res.log.concat([{name:'YOLO ONNX',ms:yres.ms,detail:yres.name+' → '+yres.boxes.length+' 框'}]):res.log;
+    renderLog(log);renderThumbs();renderResults();
+  }
+
+  /* ---------------- image loading ---------------- */
+  function addImage(name,w,h,gray,truth,color){
+    const im={name,w,h,gray,truth,color:color||grayToRGBA(gray)};state.images.push(im);
+    if(!state.current||!state.roiTouched){state.current=im;const e=V.estimateROI(im);Object.assign(roi(),e);syncRoiInputs();}
+    renderThumbs();runAndRender();
+  }
+  function loadFiles(files){
+    [...files].forEach(f=>{
+      if(!f.type||!f.type.startsWith('image/'))return;
+      const rd=new FileReader();
+      rd.onload=ev=>{
+        const img=new Image();
+        img.onload=()=>{
+          const max=512,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+          const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+          const c=document.createElement('canvas');c.width=w;c.height=h;
+          const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+          const rgba=ctx.getImageData(0,0,w,h);
+          addImage(f.name,w,h,V.toGray(rgba.data,w,h),null,rgba.data);
+        };
+        img.src=ev.target.result;
+      };
+      rd.readAsDataURL(f);
+    });
+  }
+  $('drop').addEventListener('click',()=>{state.batchMode=false;$('fileInput').multiple=false;$('fileInput').click();});
+  $('tabSingle').addEventListener('click',()=>{state.batchMode=false;$('tabSingle').classList.add('active');$('tabBatch').classList.remove('active');$('fileInput').multiple=false;});
+  $('tabBatch').addEventListener('click',()=>{state.batchMode=true;$('tabBatch').classList.add('active');$('tabSingle').classList.remove('active');$('fileInput').multiple=true;});
+  $('fileInput').addEventListener('change',e=>{loadFiles(e.target.files);e.target.value='';});
+  ['dragenter','dragover'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').style.borderColor='#2ad4c9';}));
+  ['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').style.borderColor='';}));
+  $('drop').addEventListener('drop',e=>loadFiles(e.dataTransfer.files));
+
+  $('btnSynthetic').addEventListener('click',()=>{
+    const seed=Math.floor(Math.random()*90000)+1000;
+    const im=V.generateImage(seed,{kind:$('synKind').value,lightMode:seed%3});
+    addImage('合成示例_'+seed+'_'+$('synKind').value,im.w,im.h,im.gray,im.truth);
+    Object.assign(roi(),{cx:64,cy:64,r0:22,r1:52,x0:12,y0:12,x1:116,y1:116});syncRoiInputs();runAndRender();
+  });
+  $('btnClearImages').addEventListener('click',()=>{
+    state.images=[];state.current=null;state.result=null;renderThumbs();renderResults();
+    $('statusText').textContent='等待载入样本…';
+  });
+  $('btnAutoRoi').addEventListener('click',()=>{
+    if(!state.current){toast('请先载入样本');return;}
+    const e=V.estimateROI(state.current);Object.assign(roi(),e);syncRoiInputs();state.roiTouched=true;runAndRender();toast('已根据背景色差估测 ROI');
+  });
+  $('btnFitRoi').addEventListener('click',()=>{
+    if(!state.current){toast('请先载入样本');return;}
+    const w=state.current.w,h=state.current.h,r=Math.min(w,h)*0.4;
+    Object.assign(roi(),{cx:w/2,cy:h/2,r0:r*0.45,r1:r*0.95,x0:w/2-r,y0:h/2-r,x1:w/2+r,y1:h/2+r});
+    syncRoiInputs();state.roiTouched=true;runAndRender();toast('ROI 已适配当前图像');
+  });
+  $('cSrc').addEventListener('click',e=>{
+    if(!state.current)return;
+    const b=e.currentTarget.getBoundingClientRect();
+    roi().cx=Math.round((e.clientX-b.left)/b.width*state.current.w);
+    roi().cy=Math.round((e.clientY-b.top)/b.height*state.current.h);
+    state.roiTouched=true;syncRoiInputs();runAndRender();
+  });
+
+  /* ---------------- presets / reset ---------------- */
+  function setPreset(name){
+    const p=P();Object.assign(p,DEFAULTS);
+    const on=id=>{const m=state.cfg.pipeline.find(x=>x.id===id);if(m)m.enabled=true;};
+    const off=id=>{const m=state.cfg.pipeline.find(x=>x.id===id);if(m&&!m.fixed)m.enabled=false;};
+    state.cfg.roiType='ring';
+    if(name==='sensitive'){p.threshold=8;p.minArea=3;p.minSpan=3;p.minPeak=12;}
+    if(name==='strict'){p.threshold=18;p.minArea=8;p.minSpan=5;p.minPeak=30;}
+    if(name==='cartesian'){
+      state.cfg.roiType='rect';off('unwrap');p.bgKw=25;p.bgKh=25;p.threshold=18;
+      if(state.current){const w=state.current.w,h=state.current.h;Object.assign(roi(),{x0:0,y0:0,x1:w-1,y1:h-1});}
+    }
+    on('smooth');on('background');on('segment');on('filter');off('denoise');off('contrast');
+    renderPipeline();syncRoiInputs();runAndRender();toast('已应用「'+name+'」预设');
+  }
+  document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>setPreset(b.dataset.preset)));
+  $('btnReset').addEventListener('click',()=>setPreset('standard'));
+  $('btnRun').addEventListener('click',runAndRender);
+  $('btnRun2').addEventListener('click',runAndRender);
+
+  $('btnBatch').addEventListener('click',async()=>{
+    if(!state.images.length){toast('请先载入样本');return;}
+    const keep=state.current;
+    for(const im of state.images){
+      state.current=im;await runAndRender();
+      await new Promise(r=>setTimeout(r,0));
+    }
+    state.current=keep;renderThumbs();renderResults();await runAndRender();
+    toast('批量检测完成：'+state.images.length+' 张');
+  });
+
+  /* ---------------- export / project ---------------- */
+  function download(name,content,mime){
+    const url=URL.createObjectURL(new Blob([content],{type:mime||'text/plain;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  $('btnCsv').addEventListener('click',()=>{
+    const lines=['filename,width,height,rule_defects,yolo_defects,max_score_or_peak,elapsed_ms,box_id,x0,y0,x1,y1,area,score,peak'];
+    state.images.forEach(im=>{
+      const r=im.result;if(!r){lines.push([im.name,im.w,im.h,0,0,0,0].join(','));return;}
+      const y=r.yolo,val=y?y.score.toFixed(2):r.peak.toFixed(1),ms=y?y.ms.toFixed(1):r.ms.toFixed(2);
+      if(y&&!y.boxes.length)lines.push([im.name,im.w,im.h,r.count,0,val,ms,'','','','','','','',''].join(','));
+      if(y)y.boxes.forEach((b,i)=>lines.push([im.name,im.w,im.h,r.count,y.count,val,ms,i+1,b.bbox[0].toFixed(1),b.bbox[1].toFixed(1),b.bbox[2].toFixed(1),b.bbox[3].toFixed(1),'',b.score,''].join(',')));
+      if(!y){
+        if(!r.boxes.length)lines.push([im.name,im.w,im.h,0,0,val,ms,'','','','','','','',''].join(','));
+        r.boxes.forEach((b,i)=>lines.push([im.name,im.w,im.h,r.count,0,val,ms,i+1,b.bbox[0],b.bbox[1],b.bbox[2],b.bbox[3],b.area,'',b.peak].join(',')));
+      }
+    });
+    download('visionqc_report.csv','\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');toast('CSV 已导出');
+  });
+  $('btnJson').addEventListener('click',()=>{
+    const payload={app:'VisionQC-Studio',version:'1.2.0',exportedAt:new Date().toISOString(),config:state.cfg,yoloModel:state.yolo?state.yolo.name:null,images:state.images.map(im=>({name:im.name,w:im.w,h:im.h,result:im.result||null}))};
+    download('visionqc_report.json',JSON.stringify(payload,null,2),'application/json');toast('JSON 报告已导出');
+  });
+  $('btnPng').addEventListener('click',()=>{
+    if(!state.current){toast('请先载入样本');return;}
+    $('cDet').toBlob(b=>{const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download=(state.current.name||'sample')+'_detected.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);});
+    toast('结果图已导出');
+  });
+  $('btnSaveProject').addEventListener('click',()=>{
+    download('visionqc_flow.json',JSON.stringify({app:'VisionQC-Studio',version:'1.1.0',config:state.cfg},null,2),'application/json');toast('流程配置已保存');
+  });
+  $('btnOpenProject').addEventListener('click',()=>$('projectInput').click());
+  $('projectInput').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=ev=>{
+      try{
+        const o=JSON.parse(ev.target.result);
+        if(!o.config||!Array.isArray(o.config.pipeline))throw new Error('格式不符');
+        state.cfg=o.config;P().pw=P().pw||360;
+        renderPipeline();syncRoiInputs();runAndRender();toast('流程配置已载入');
+      }catch(err){toast('流程文件无效：'+err.message);}
+    };
+    rd.readAsText(f);e.target.value='';
+  });
+  $('btnNew').addEventListener('click',()=>{
+    state.cfg={roiType:'ring',roi:{cx:64,cy:64,r0:22,r1:52,x0:12,y0:12,x1:116,y1:116},params:{...DEFAULTS},pipeline:MODULES.map(m=>({id:m.id,enabled:m.id!=='denoise'&&m.id!=='contrast',fixed:!!m.fixed,locked:!!m.locked}))};
+    state.roiTouched=false;renderPipeline();syncRoiInputs();if(state.current){const e=V.estimateROI(state.current);Object.assign(roi(),e);syncRoiInputs();}
+    runAndRender();toast('流程已重置为默认');
+  });
+
+  renderPipeline();syncRoiInputs();
+  // start with a synthetic sample so the workspace is immediately usable
+  const demo=V.generateImage(2026,{kind:'scratch',lightMode:0});
+  state.images.push({name:'示例_划痕_2026',w:demo.w,h:demo.h,gray:demo.gray,truth:demo.truth,color:grayToRGBA(demo.gray)});
+  state.current=state.images[0];renderThumbs();runAndRender();
+})();
+</script>
+</body>
+</html>
