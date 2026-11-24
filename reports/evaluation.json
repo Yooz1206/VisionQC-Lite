@@ -1,6 +1,6 @@
 {
   "project": "VisionQC-Lite v1.0.0",
-  "generatedAt": "2026-11-24T01:23:53.414Z",
+  "generatedAt": "2026-11-24T01:55:54.715Z",
   "environment": {
     "node": "v22.22.2",
     "platform": "win32",
@@ -178,20 +178,20 @@
   },
   "latency": {
     "A_otsu_global": {
-      "msPerImage": 0.551,
-      "fps": 1814.5
+      "msPerImage": 0.533,
+      "fps": 1874.9
     },
     "B_adaptive_local": {
-      "msPerImage": 0.424,
-      "fps": 2356
+      "msPerImage": 0.416,
+      "fps": 2401.8
     },
     "C_polar_no_filter": {
-      "msPerImage": 0.874,
-      "fps": 1143.7
+      "msPerImage": 0.834,
+      "fps": 1198.8
     },
     "D_ours_full": {
-      "msPerImage": 0.874,
-      "fps": 1144
+      "msPerImage": 0.852,
+      "fps": 1174.3
     }
   },
   "matchingRule": "A detection is TP if its box center lies within 7 px of a ground-truth defect center; each GT matched at most once.",
