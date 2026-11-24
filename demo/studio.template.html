@@ -87,6 +87,25 @@
   .empty{padding:16px;color:var(--muted);text-align:center}
   .toast{position:fixed;right:18px;bottom:18px;background:var(--panel2);border:1px solid var(--cyan);border-radius:8px;padding:10px 14px;font-size:12px;z-index:20;opacity:0;transition:.25s;pointer-events:none}
   .toast.show{opacity:1}
+  /* ---- 实拍缺口检测 / 使用指南 ---- */
+  .chipbox{background:#0d2234;border:1px solid #1d4564;border-radius:8px;padding:10px;margin-top:8px}
+  .chipbox .big{width:100%;font-size:13px;font-weight:700;padding:9px;background:linear-gradient(90deg,#0e7c86,#0e5f8c);color:#fff;border:0;border-radius:6px;cursor:pointer}
+  .chipbox .big:hover{filter:brightness(1.12)}
+  .chipgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .chipgrid div{background:#081a29;border-radius:5px;padding:6px 8px;font-size:10px;color:var(--muted)}
+  .chipgrid b{display:block;color:#dff3ff;font-size:13px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+  .verdict{display:inline-block;padding:3px 10px;border-radius:4px;font-weight:800;font-size:12px;letter-spacing:1px}
+  .verdict.ok{background:#124b34;color:#5ef0a8;border:1px solid #1e8a5b}
+  .verdict.ng{background:#5c1f27;color:#ff8a95;border:1px solid #b23a48}
+  .modal{display:none;position:fixed;inset:0;background:rgba(3,10,18,.78);z-index:50;align-items:center;justify-content:center;padding:24px}
+  .modal.open{display:flex}
+  .modal .card{background:#0d1e2e;border:1px solid #245077;border-radius:12px;max-width:780px;width:100%;max-height:86vh;overflow:auto;padding:24px 28px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+  .modal h2{margin:0 0 6px;font-size:21px;color:#6ce5e0}
+  .modal h3{margin:20px 0 6px;font-size:14px;color:#ffc87a}
+  .modal p,.modal li{font-size:13px;line-height:1.8;color:#bdd3e6}
+  .modal ol,.modal ul{padding-left:22px;margin:6px 0}
+  .modal code{background:#07131f;border:1px solid #23415c;border-radius:4px;padding:1px 6px;color:#9ae6ff;font-size:12px}
+  .modal .close{float:right;background:#1c3b55;color:#d6ecff;border:0;border-radius:5px;padding:6px 12px;cursor:pointer}
   @media(max-width:1150px){.app{grid-template-columns:220px 1fr}.app>aside:last-child{grid-column:1/-1}.views{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -100,6 +119,7 @@
     <button id="btnNew">新建项目</button>
     <button id="btnOpenProject">打开流程</button>
     <button id="btnSaveProject">保存流程</button>
+    <button id="btnGuide">使用指南</button>
     <button class="primary" id="btnRun">▶ 运行流程</button>
   </div>
 </header>
@@ -162,6 +182,26 @@
         <div class="row"><label>推理尺寸</label><select id="yoloSize" style="width:90px"><option value="640">640</option><option value="416">416</option><option value="320">320</option></select></div>
         <div class="hint" id="yoloStatus">未载入模型：当前使用规则引擎基线。载入 exported ONNX 后 YOLO 成为主检测器。</div>
       </div>
+
+      <div class="section">
+        <div class="section-title">5. 实拍缺口检测（自动定位圆）</div>
+        <div class="btnrow">
+          <button data-real="1">样例 1</button>
+          <button data-real="2">样例 2</button>
+          <button data-real="3">样例 3</button>
+        </div>
+        <div class="chipbox">
+          <button class="big" id="btnChipRun">◎ 一键定位圆 + 检测缺口</button>
+          <div class="row" style="margin-top:8px"><label>灵敏度</label><input type="number" id="chipSens" value="1" step="0.1" min="0.5" max="3" style="width:76px"></div>
+          <div class="chipgrid">
+            <div>判定<b id="chipVerdict">—</b></div>
+            <div>圆心坐标<b id="chipCircle">—</b></div>
+            <div>缺口框<b id="chipBox">—</b></div>
+            <div>缺口面积<b id="chipArea">—</b></div>
+          </div>
+          <div class="hint" id="chipHint" style="margin-top:8px">载入实拍图或上传照片后点上方按钮；圆标记会自动定位并以十字标出。</div>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -214,16 +254,48 @@
   </div>
 </div>
 
+<div class="modal" id="guideModal">
+  <div class="card">
+    <button class="close" id="btnGuideClose">关闭</button>
+    <h2>使用指南 · 实拍缺口检测</h2>
+    <p>本工作台针对托盘中的方形工件：自动定位银色圆标记作为基准，再用凸包空缺检测缺口。整个过程只需 <b>2 步</b>。</p>
+    <h3>① 最快上手（推荐）</h3>
+    <ol>
+      <li>左侧第 5 区点击 <b>样例 1 / 2 / 3</b>，或把你的照片拖到上方“载入样本”区域。</li>
+      <li>点击 <b>◎ 一键定位圆 + 检测缺口</b>。结果立即显示：<span class="verdict ok">OK</span> 合格 / <span class="verdict ng">NG</span> 有缺口。</li>
+    </ol>
+    <p>画面中：<b>青色十字 + C 标记</b> = 自动定位的圆心；<b>黄色虚线框</b> = 自动识别的工件范围；<b>红色粗框</b> = 检测到的缺口。右下“判定”栏同时给出圆心像素坐标、缺口框与面积。</p>
+    <h3>② 用自己的照片</h3>
+    <ul>
+      <li>点击左侧“载入样本”虚线框选择 JPG/PNG，可一次多选做批量；也可直接拖拽。</li>
+      <li>建议拍摄：工件位于画面中央、背景较暗、圆标记完整可见；分辨率不限，页面自动缩放。</li>
+      <li>若工件不在画面中央导致分割失败，先在“检测区域 ROI”选<b>矩形</b>并框住工件，再点一键检测。</li>
+      <li>误报偏多时把“灵敏度”调到 <code>0.7</code>；漏报时调到 <code>1.5</code>。</li>
+    </ul>
+    <h3>③ 流程编排与导出（可选）</h3>
+    <ul>
+      <li>右侧可勾选 / 排序 / 调参各模块，关闭“极坐标展开”即切换笛卡尔模式，关闭“一致性滤波”可看误检变化。</li>
+      <li>第 4 区载入训练导出的 ONNX 后，YOLO 成为主检测器（橙色框），规则引擎以绿色虚线作对照。</li>
+      <li>底部可 <b>批量检测全部</b>，并导出 CSV / JSON 报告 / 当前结果 PNG。</li>
+    </ul>
+    <h3>④ 结果怎么看</h3>
+    <p>缺口面积占工件面积约 <b>4.6%</b>（样例 1）判为 NG；设计性小圆角约 <b>0.7% ~ 1.1%</b>（样例 2、3）判为 OK。默认阈值 <code>1.4%</code>，可在灵敏度里微调。</p>
+    <p style="color:#ffc87a"><b>边界说明：</b>本方法是无训练的无监督几何检测，适合背景简洁、轮廓清晰的场景；强反光、工件严重遮挡或圆标记缺失时需人工复核。它不替代 YOLO 分类模型。</p>
+  </div>
+</div>
+
 <input type="file" id="fileInput" accept="image/*" multiple hidden>
 <input type="file" id="projectInput" accept="application/json,.json" hidden>
 <input type="file" id="yoloInput" accept=".onnx" hidden>
 <div class="toast" id="toast"></div>
 
+<!-- real-samples:inject -->
+<script src="../src/chip-inspect.js"></script>
 <script src="../src/vision-core.js"></script>
 <script>
 (function(){
-  if(!window.VisionCore){document.body.innerHTML='<p style="padding:40px">未能加载 vision-core.js</p>';return;}
-  const V=window.VisionCore, $=id=>document.getElementById(id);
+  if(!window.VisionCore||!window.ChipInspect){document.body.innerHTML='<p style="padding:40px">未能加载核心算法文件</p>';return;}
+  const V=window.VisionCore, CI=window.ChipInspect, $=id=>document.getElementById(id);
   const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
   const MODULES=[
@@ -241,7 +313,7 @@
   const DEFAULTS={k:3,pw:360,ph:30,smoothKw:3,smoothKh:3,bgKw:61,bgKh:15,threshold:12,edgeSkip:2,minArea:5,minSpan:4,maxSpan:14,minPeak:20};
   const state={
     images:[],current:null,result:null,roiTouched:false,batchMode:false,
-    yolo:null,yoloEnabled:true,yoloBusy:false,runId:0,ortReady:false,
+    yolo:null,yoloEnabled:true,yoloBusy:false,runId:0,ortReady:false,chipResult:null,
     cfg:{roiType:'ring',roi:{cx:64,cy:64,r0:22,r1:52,x0:12,y0:12,x1:116,y1:116},params:{...DEFAULTS},pipeline:[]}
   };
   state.cfg.pipeline=MODULES.map(m=>({id:m.id,enabled:m.id!=='denoise'&&m.id!=='contrast',fixed:!!m.fixed,locked:!!m.locked}));
@@ -462,6 +534,25 @@
       ctx.beginPath();ctx.arc(r.cx,r.cy,r.r0,0,Math.PI*2);ctx.stroke();
     }else ctx.strokeRect(r.x0,r.y0,r.x1-r.x0,r.y1-r.y0);
     if(src.truth){ctx.strokeStyle='#ff6272';for(const t of src.truth){const b=t.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}}
+    if(src.chip)drawChipOverlay(ctx,src.chip);
+  }
+  /* 圆标记十字定位 + 工件框 + 缺口框（叠加在原图与结果图上） */
+  function drawChipOverlay(ctx,c){
+    ctx.save();ctx.font='bold 12px sans-serif';
+    const b=c.chip.bbox;
+    ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle='#ffe08a';
+    ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);ctx.setLineDash([]);
+    const f=c.fiducial;
+    ctx.strokeStyle='#2ad4c9';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(f.x-14,f.y);ctx.lineTo(f.x+14,f.y);ctx.moveTo(f.x,f.y-14);ctx.lineTo(f.x,f.y+14);ctx.stroke();
+    ctx.beginPath();ctx.arc(f.x,f.y,9,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#2ad4c9';ctx.fillText('C ('+f.x+','+f.y+')',f.x+13,f.y-8);
+    if(c.verdict==='NG'&&c.defects.length){
+      const d=c.defects[0],q=d.bbox;
+      ctx.strokeStyle='#ff4f61';ctx.lineWidth=3;ctx.strokeRect(q[0],q[1],q[2]-q[0]+1,q[3]-q[1]+1);
+      ctx.fillStyle='#ff4f61';ctx.fillText('缺口 '+d.area+'px',q[0]+2,Math.max(13,q[1]-4));
+    }
+    ctx.restore();
   }
   function drawPolarView(res){
     const c=$('cPolar');
@@ -509,6 +600,7 @@
       });
     }
     if(src.truth){ctx.strokeStyle='#ff6272';ctx.lineWidth=1;for(const t of src.truth){const b=t.bbox;ctx.strokeRect(b[0],b[1],b[2]-b[0]+1,b[3]-b[1]+1);}}
+    if(src.chip)drawChipOverlay(ctx,src.chip);
   }
 
   /* ---------------- UI sync ---------------- */
@@ -555,7 +647,8 @@
     state.images.forEach(im=>{
       const r=im.result;const tr=document.createElement('tr');
       const y=r&&r.yolo?r.yolo:null;
-      const verdict=y?(y.count?'<span class="tag ok">YOLO 检出</span>':'<span class="tag bad">YOLO 未检出</span>'):(r?(r.count?'<span class="tag ok">规则检出</span>':'<span class="tag bad">规则未检出</span>'):'—');
+      const chipVerdict=im.chip?'<span class="tag '+(im.chip.verdict==='NG'?'bad':'ok')+'">缺口 '+im.chip.verdict+'</span>':'';
+      const verdict=chipVerdict||(y?(y.count?'<span class="tag ok">YOLO 检出</span>':'<span class="tag bad">YOLO 未检出</span>'):(r?(r.count?'<span class="tag ok">规则检出</span>':'<span class="tag bad">规则未检出</span>'):'—'));
       tr.innerHTML='<td>'+(im.name||'合成样本')+'</td><td>'+im.w+'×'+im.h+'</td><td>'+(r?r.count:'—')+'</td><td>'+(y?y.count:'—')+'</td><td>'+(y?y.score.toFixed(2):(r?r.peak.toFixed(1):'—'))+'</td><td>'+(y?y.ms.toFixed(0)+' ms':(r?r.ms.toFixed(1)+' ms':'—'))+'</td><td>'+verdict+'</td><td><button data-view="'+state.images.indexOf(im)+'">查看</button></td>';
       body.appendChild(tr);
     });
@@ -618,6 +711,7 @@
   /* ---------------- image loading ---------------- */
   function addImage(name,w,h,gray,truth,color){
     const im={name,w,h,gray,truth,color:color||grayToRGBA(gray)};state.images.push(im);
+    if(typeof resetChipPanel==='function'&&im===state.images[state.images.length-1]&&!im.chip)resetChipPanel();
     if(!state.current||!state.roiTouched){state.current=im;const e=V.estimateROI(im);Object.assign(roi(),e);syncRoiInputs();}
     renderThumbs();runAndRender();
   }
@@ -714,21 +808,22 @@
     setTimeout(()=>URL.revokeObjectURL(url),1500);
   }
   $('btnCsv').addEventListener('click',()=>{
-    const lines=['filename,width,height,rule_defects,yolo_defects,max_score_or_peak,elapsed_ms,box_id,x0,y0,x1,y1,area,score,peak'];
+    const lines=['filename,width,height,rule_defects,yolo_defects,max_score_or_peak,elapsed_ms,box_id,x0,y0,x1,y1,area,score,peak,chip_verdict,circle_x,circle_y,defect_area'];
     state.images.forEach(im=>{
-      const r=im.result;if(!r){lines.push([im.name,im.w,im.h,0,0,0,0].join(','));return;}
+      const tail=im.chip?[im.chip.verdict,im.chip.fiducial.x,im.chip.fiducial.y,im.chip.maxDefectArea].join(','):',,,';
+      const r=im.result;if(!r){lines.push([im.name,im.w,im.h,0,0,0,0].join(',')+','+tail);return;}
       const y=r.yolo,val=y?y.score.toFixed(2):r.peak.toFixed(1),ms=y?y.ms.toFixed(1):r.ms.toFixed(2);
-      if(y&&!y.boxes.length)lines.push([im.name,im.w,im.h,r.count,0,val,ms,'','','','','','','',''].join(','));
-      if(y)y.boxes.forEach((b,i)=>lines.push([im.name,im.w,im.h,r.count,y.count,val,ms,i+1,b.bbox[0].toFixed(1),b.bbox[1].toFixed(1),b.bbox[2].toFixed(1),b.bbox[3].toFixed(1),'',b.score,''].join(',')));
+      if(y&&!y.boxes.length)lines.push([im.name,im.w,im.h,r.count,0,val,ms,'','','','','','','',''].join(',')+','+tail);
+      if(y)y.boxes.forEach((b,i)=>lines.push([im.name,im.w,im.h,r.count,y.count,val,ms,i+1,b.bbox[0].toFixed(1),b.bbox[1].toFixed(1),b.bbox[2].toFixed(1),b.bbox[3].toFixed(1),'',b.score,''].join(',')+','+tail));
       if(!y){
-        if(!r.boxes.length)lines.push([im.name,im.w,im.h,0,0,val,ms,'','','','','','','',''].join(','));
-        r.boxes.forEach((b,i)=>lines.push([im.name,im.w,im.h,r.count,0,val,ms,i+1,b.bbox[0],b.bbox[1],b.bbox[2],b.bbox[3],b.area,'',b.peak].join(',')));
+        if(!r.boxes.length)lines.push([im.name,im.w,im.h,0,0,val,ms,'','','','','','','',''].join(',')+','+tail);
+        r.boxes.forEach((b,i)=>lines.push([im.name,im.w,im.h,r.count,0,val,ms,i+1,b.bbox[0],b.bbox[1],b.bbox[2],b.bbox[3],b.area,'',b.peak].join(',')+','+tail));
       }
     });
     download('visionqc_report.csv','\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');toast('CSV 已导出');
   });
   $('btnJson').addEventListener('click',()=>{
-    const payload={app:'VisionQC-Studio',version:'1.2.0',exportedAt:new Date().toISOString(),config:state.cfg,yoloModel:state.yolo?state.yolo.name:null,images:state.images.map(im=>({name:im.name,w:im.w,h:im.h,result:im.result||null}))};
+    const payload={app:'VisionQC-Studio',version:'1.2.0',exportedAt:new Date().toISOString(),config:state.cfg,yoloModel:state.yolo?state.yolo.name:null,images:state.images.map(im=>({name:im.name,w:im.w,h:im.h,result:im.result||null,chip:im.chip||null}))};
     download('visionqc_report.json',JSON.stringify(payload,null,2),'application/json');toast('JSON 报告已导出');
   });
   $('btnPng').addEventListener('click',()=>{
@@ -758,6 +853,52 @@
     state.roiTouched=false;renderPipeline();syncRoiInputs();if(state.current){const e=V.estimateROI(state.current);Object.assign(roi(),e);syncRoiInputs();}
     runAndRender();toast('流程已重置为默认');
   });
+
+  /* ---------------- 实拍缺口检测 / 指南 ---------------- */
+  function resetChipPanel(){
+    state.chipResult=null;
+    ['chipVerdict','chipCircle','chipBox','chipArea'].forEach(id=>$(id).textContent='—');
+    $('chipHint').textContent='载入实拍图或上传照片后点上方按钮；圆标记会自动定位并以十字标出。';
+  }
+  function loadRealSample(i){
+    const src=(window.REAL_SAMPLES||[])[i-1];
+    if(!src){toast('实拍样例未内嵌');return;}
+    const img=new Image();
+    img.onload=()=>{
+      const w=img.naturalWidth,h=img.naturalHeight;
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+      const rgba=ctx.getImageData(0,0,w,h);
+      addImage('实拍样例_'+i,w,h,V.toGray(rgba.data,w,h),null,rgba.data);
+      state.current=state.images[state.images.length-1];state.roiTouched=false;
+      resetChipPanel();renderThumbs();runChipInspect();
+    };
+    img.src=src;
+  }
+  async function runChipInspect(){
+    if(!state.current){toast('请先载入样本');return;}
+    const r=CI.inspect({gray:state.current.gray,w:state.current.w,h:state.current.h},{sensitivity:+$('chipSens').value||1});
+    if(!r.ok){toast(r.reason);return;}
+    state.chipResult=r;state.current.chip=r;
+    state.cfg.roiType='rect';
+    Object.assign(roi(),{x0:r.chip.bbox[0],y0:r.chip.bbox[1],x1:r.chip.bbox[2],y1:r.chip.bbox[3]});
+    syncRoiInputs();
+    const d=r.defects[0];
+    $('chipVerdict').innerHTML='<span class="verdict '+(r.verdict==='NG'?'ng':'ok')+'">'+r.verdict+'</span>';
+    $('chipCircle').textContent='('+r.fiducial.x+', '+r.fiducial.y+')';
+    $('chipBox').textContent=(r.verdict==='NG'&&d)?'['+d.bbox.join(', ')+']':'—';
+    $('chipArea').textContent=r.verdict==='NG'?r.maxDefectArea+' px':'—';
+    $('chipHint').textContent=r.reasons[0]+' · 耗时 '+r.ms+' ms';
+    await runAndRender();
+    $('statusText').textContent=(state.current.name||'样本')+' · 圆心 ('+r.fiducial.x+','+r.fiducial.y+') · '+r.verdict+' · '+r.ms+' ms';
+    toast(r.verdict==='NG'?'检出缺口 '+r.maxDefectArea+' px':'未检出显著缺口');
+  }
+  $('btnChipRun').addEventListener('click',runChipInspect);
+  document.querySelectorAll('[data-real]').forEach(b=>b.addEventListener('click',()=>loadRealSample(+b.dataset.real)));
+  $('btnGuide').addEventListener('click',()=>$('guideModal').classList.add('open'));
+  $('btnGuideClose').addEventListener('click',()=>$('guideModal').classList.remove('open'));
+  $('guideModal').addEventListener('click',e=>{if(e.target.id==='guideModal')$('guideModal').classList.remove('open');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('guideModal').classList.remove('open');});
 
   renderPipeline();syncRoiInputs();
   // start with a synthetic sample so the workspace is immediately usable
