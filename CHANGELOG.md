@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0 (2026-11-24)
+
+YOLO 主线升级，规则引擎保留为可解释基线。
+
+- 新增 `src/make_yolo_dataset.js`：导出 800 张 YOLO 格式数据集（640 train / 160 val，3 类缺陷 + 正常样本，含 manifest）
+- 新增 `train_yolo.py` / `export_onnx.py` / `requirements-yolo.txt` / `docs/YOLO_TRAINING.md`
+- 新增 `studio/index.html` 专业工作台：上传/拖拽/批量检测、ROI 自动定位与手动调整、10 个可启停排序调参的流程模块、四路实时视图、执行日志、CSV/JSON/PNG 导出、流程配置保存/加载
+- 工作台接入 onnxruntime-web：载入 YOLO ONNX 后作为主检测器，完成 letterbox / 推理 / 解码 / NMS / 坐标还原；未载入模型时明确提示并回退规则引擎
+- 同一画面叠加 YOLO 结果（橙色实线）与规则基线（绿色虚线），支持逐张可解释对照
+- 内核新增任意尺寸图像与参数化接口（灰度化、自动对比度、ROI 估计、极坐标展开、通用检测），原 480 图评测数字保持不变
+- 创新表述调整为“可控数据构造 + 极坐标先验 + 双引擎对照”，不再把“用了 YOLO”当创新
+
 ## 1.0.0 (2026-11-24)
 
 首个可答辩版本。
