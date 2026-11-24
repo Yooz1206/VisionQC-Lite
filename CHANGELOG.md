@@ -10,3 +10,6 @@
 - 实现交互式浏览器演示 `demo/index.html`
 - 生成答辩用结果图 `reports/figures/`
 - 补充工程流程文档、自媒体宣发文章、开源许可
+- 修复演示页在预览面板 / `file://` 下因相对路径加载 `vision-core.js` 失败的问题：
+  `demo/index.html` 改为单文件自包含（算法内嵌），并新增 `src/build_demo.js` 与
+  `demo/index.template.html` 便于后续重建
