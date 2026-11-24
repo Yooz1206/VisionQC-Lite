@@ -14,7 +14,7 @@ VisionQC-Lite 是一个**规则驱动、可解释、零训练成本**的视觉�
 
 - 输入：128×128 灰度垫片图像
 - 输出：缺陷位置框 + 类型 + 置信度（残差峰值）
-- 部署：浏览器直接打开 `demo/index.html` 即可现场演示，无需安装依赖
+- 部署：浏览器直接打开 `demo/index.html` 即可现场演示，**单文件自包含、无需服务器、无需安装依赖**
 
 ## 2. 核心方法
 
@@ -55,9 +55,11 @@ visionqc/
 ├── src/
 │   ├── vision-core.js      # 核心算法（UMD，Node + 浏览器共用）
 │   ├── evaluate.js         # 可复现批量评测（480 张，含消融与耗时）
-│   └── make_figures.js     # 从真实检测结果生成论文/答辩用图
+│   ├── make_figures.js     # 从真实检测结果生成论文/答辩用图
+│   └── build_demo.js       # 由模板 + 核心算法重建自包含演示页
 ├── demo/
-│   └── index.html          # 交互式现场演示（双击即可运行）
+│   ├── index.html          # 交互式现场演示（单文件、双击即可运行）
+│   └── index.template.html # 演示页模板（修改 UI 后需重建 index.html）
 ├── reports/
 │   ├── evaluation.json     # 完整评测报告（自动生成）
 │   └── figures/            # 检测效果图、极坐标/残差图
@@ -81,6 +83,9 @@ cat reports/evaluation.json
 
 # 3) 重新生成答辩用图
 node src/make_figures.js
+
+# 4) 修改演示页 UI 或核心算法后，重建自包含演示页
+node src/build_demo.js
 ```
 
 评测使用固定种子 `SEED=2026`，任何人运行都得到相同数字。
